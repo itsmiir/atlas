@@ -180,6 +180,7 @@ public class AtlasChunkGenerator extends ChunkGenerator {
         return CompletableFuture.supplyAsync(Util.debugSupplier("wgen_fill_noise", () -> this.populateNoise(chunk2)), Util.getMainWorkerExecutor());
     }
     private Chunk populateNoise(Chunk chunk) {
+        int minY = settings.value().generationShapeConfig().minimumY();
         Heightmap oceanHeightmap = chunk.getHeightmap(Heightmap.Type.OCEAN_FLOOR_WG);
         Heightmap surfaceHeightmap = chunk.getHeightmap(Heightmap.Type.WORLD_SURFACE_WG);
         BlockState defaultBlock = this.settings.value().defaultBlock();
@@ -192,8 +193,8 @@ public class AtlasChunkGenerator extends ChunkGenerator {
             for (int z = 0; z < 16; z++) {
                 mutable.setZ(z);
                 int elevation = this.getElevation(x+offsetX, z+offsetZ);
-                if (elevation != -1) {
-                    for (int y = settings.value().generationShapeConfig().minimumY(); y < elevation; y++) {
+                if (elevation != -1 && elevation >= minY) {
+                    for (int y = minY; y < elevation; y++) {
                         mutable.setY(y);
                         chunk.setBlockState(mutable, defaultBlock, false);
                     }
@@ -206,8 +207,8 @@ public class AtlasChunkGenerator extends ChunkGenerator {
                     } else {
                         surfaceHeightmap.trackUpdate(x, elevation, z, defaultBlock);
                     }
+                    oceanHeightmap.trackUpdate(x, elevation, z, defaultBlock);
                 }
-                oceanHeightmap.trackUpdate(x, elevation, z, defaultBlock);
             }
         }
         return chunk;
