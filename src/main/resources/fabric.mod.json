@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "id": "modid",
+  "id": "atlas",
   "version": "${version}",
 
   "name": "Example Mod",
@@ -19,11 +19,11 @@
   "environment": "*",
   "entrypoints": {
     "main": [
-      "net.fabricmc.example.ExampleMod"
+      "com.miir.atlas.Atlas"
     ]
   },
   "mixins": [
-    "modid.mixins.json"
+    "atlas.mixins.json"
   ],
 
   "depends": {
