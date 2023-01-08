@@ -1,6 +1,6 @@
 package com.miir.atlas.mixin;
 
-import com.miir.atlas.Atlas;
+import com.miir.atlas.world.gen.biome.source.AtlasBiomeSource;
 import com.miir.atlas.world.gen.chunk.AtlasChunkGenerator;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.WorldGenerationProgressListener;
@@ -20,10 +20,13 @@ public abstract class MinecraftServerMixin {
 
     @Inject(method = "createWorlds", at = @At("TAIL"))
     private void atlas_grabServer(WorldGenerationProgressListener worldGenerationProgressListener, CallbackInfo ci) {
-        Atlas.LEVEL_NAME = this.saveProperties.getLevelInfo().getLevelName();
+        String levelName = this.saveProperties.getLevelName();
         for (ServerWorld world : this.getWorlds()) {
             if (world.getChunkManager().getChunkGenerator() instanceof AtlasChunkGenerator cg) {
-                cg.findHeightmap(Atlas.LEVEL_NAME);
+                cg.findHeightmap(levelName);
+                if (cg.getBiomeSource() instanceof AtlasBiomeSource abs) {
+                    abs.findBiomeMap(levelName);
+                }
             }
         }
     }

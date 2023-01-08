@@ -11,7 +11,7 @@ import net.minecraft.block.Blocks;
 import net.minecraft.registry.Registry;
 import net.minecraft.registry.RegistryKeys;
 import net.minecraft.registry.entry.RegistryEntry;
-import net.minecraft.util.Identifier;
+import net.minecraft.util.Util;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.ChunkPos;
 import net.minecraft.util.math.random.CheckedRandom;
@@ -38,17 +38,14 @@ import net.minecraft.world.gen.carver.CarvingMask;
 import net.minecraft.world.gen.carver.ConfiguredCarver;
 import net.minecraft.world.gen.chunk.*;
 import net.minecraft.world.gen.noise.NoiseConfig;
-import org.spongepowered.asm.mixin.injection.At;
 
 import javax.imageio.ImageIO;
 import java.awt.image.Raster;
 import java.io.File;
 import java.io.IOException;
-import java.util.Arrays;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.Executor;
-import java.util.stream.IntStream;
 import java.util.stream.Stream;
 
 public class AtlasChunkGenerator extends ChunkGenerator {
@@ -89,7 +86,7 @@ public class AtlasChunkGenerator extends ChunkGenerator {
                 }
                 if (i % 4 == 0) this.heightPixels[y][x++] = data[i];
             }
-            Atlas.LOGGER.info("imported a map for dimension "+this.path+" with a "+width+"x"+height+" map!");
+            Atlas.LOGGER.info("found elevation data for dimension "+this.path+" in a "+width+"x"+height+" map!");
         } catch (IOException ioe) {
              throw new IllegalStateException("could not find heightmap file at"+path+"!");
         }
@@ -99,14 +96,14 @@ public class AtlasChunkGenerator extends ChunkGenerator {
             Codec.STRING.fieldOf("path").forGetter(AtlasChunkGenerator::getPath),
             BiomeSource.CODEC.fieldOf("biome_source").forGetter(AtlasChunkGenerator::getBiomeSource),
             ChunkGeneratorSettings.REGISTRY_CODEC.fieldOf("settings").forGetter(AtlasChunkGenerator::getSettings),
-            Codec.INT.fieldOf("minimum_y").forGetter(AtlasChunkGenerator::getMinimumY)
+            Codec.INT.fieldOf("starting_y").forGetter(AtlasChunkGenerator::getMinimumY)
     ).apply(instance, AtlasChunkGenerator::new));
 
     private int getElevation(int x, int z) {
         x += width / 2;
         z += height / 2;
         if (x < 0 || z < 0 || x >= width || z >= height) return -1;
-        return this.heightPixels[z][x];
+        return this.heightPixels[z][x]+minimumY;
     }
 
     public RegistryEntry<ChunkGeneratorSettings> getSettings() {
@@ -179,7 +176,10 @@ public class AtlasChunkGenerator extends ChunkGenerator {
     }
 
     @Override
-    public CompletableFuture<Chunk> populateNoise(Executor executor, Blender blender, NoiseConfig noiseConfig, StructureAccessor structureAccessor, Chunk chunk) {
+    public CompletableFuture<Chunk> populateNoise(Executor executor, Blender blender, NoiseConfig noiseConfig, StructureAccessor structureAccessor, Chunk chunk2) {
+        return CompletableFuture.supplyAsync(Util.debugSupplier("wgen_fill_noise", () -> this.populateNoise(chunk2)), Util.getMainWorkerExecutor());
+    }
+    private Chunk populateNoise(Chunk chunk) {
         Heightmap oceanHeightmap = chunk.getHeightmap(Heightmap.Type.OCEAN_FLOOR_WG);
         Heightmap surfaceHeightmap = chunk.getHeightmap(Heightmap.Type.WORLD_SURFACE_WG);
         BlockState defaultBlock = this.settings.value().defaultBlock();
@@ -193,7 +193,7 @@ public class AtlasChunkGenerator extends ChunkGenerator {
                 mutable.setZ(z);
                 int elevation = this.getElevation(x+offsetX, z+offsetZ);
                 if (elevation != -1) {
-                    for (int y = MIN_GENERATION_HEIGHT; y < elevation + minimumY; y++) {
+                    for (int y = settings.value().generationShapeConfig().minimumY(); y < elevation; y++) {
                         mutable.setY(y);
                         chunk.setBlockState(mutable, defaultBlock, false);
                     }
@@ -202,15 +202,15 @@ public class AtlasChunkGenerator extends ChunkGenerator {
                             mutable.setY(y);
                             chunk.setBlockState(mutable, defaultFluid, false);
                         }
-                        surfaceHeightmap.trackUpdate(x, elevation+minimumY, z, defaultFluid);
+                        surfaceHeightmap.trackUpdate(x, elevation, z, defaultFluid);
                     } else {
-                        surfaceHeightmap.trackUpdate(x, elevation+minimumY, z, defaultBlock);
+                        surfaceHeightmap.trackUpdate(x, elevation, z, defaultBlock);
                     }
                 }
-                oceanHeightmap.trackUpdate(x, elevation+minimumY, z, defaultBlock);
+                oceanHeightmap.trackUpdate(x, elevation, z, defaultBlock);
             }
         }
-        return CompletableFuture.completedFuture(chunk);
+        return chunk;
     }
 
     @Override
@@ -220,7 +220,7 @@ public class AtlasChunkGenerator extends ChunkGenerator {
 
     @Override
     public int getMinimumY() {
-        return this.minimumY;
+        return this.settings.value().generationShapeConfig().minimumY();
     }
 
     @Override

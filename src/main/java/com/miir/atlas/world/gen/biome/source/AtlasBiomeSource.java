@@ -16,8 +16,6 @@ import java.awt.image.Raster;
 import java.io.File;
 import java.io.IOException;
 import java.util.List;
-import java.util.stream.Collectors;
-import java.util.stream.Stream;
 
 public class AtlasBiomeSource extends BiomeSource {
     private int width;
@@ -25,25 +23,27 @@ public class AtlasBiomeSource extends BiomeSource {
     private final String path;
     private int[][] biomePixels;
     private final List<BiomeEntry> biomeEntries;
+    private final RegistryEntry<Biome> defaultBiome;
     private final Int2ObjectArrayMap<RegistryEntry<Biome>> biomes = new Int2ObjectArrayMap<>();
 
-    protected AtlasBiomeSource(String path, List<BiomeEntry> biomes) {
-        super(biomes.stream().flatMap(biomeEntry -> Stream.of(biomeEntry.biome)).collect(Collectors.toList()));
+    protected AtlasBiomeSource(String path, List<BiomeEntry> biomes, RegistryEntry<Biome> defaultBiome) {
+        super(biomes.stream().map(biomeEntry -> biomeEntry.biome).toList());
         this.path = path;
         this.biomeEntries = biomes;
+        this.defaultBiome = defaultBiome;
         for (BiomeEntry entry : this.biomeEntries) this.biomes.put(entry.color, entry.biome);
-        this.findBiomeMap("test");
     }
 
     public static final Codec<AtlasBiomeSource> CODEC = RecordCodecBuilder.create(instance -> instance.group(
             Codec.STRING.fieldOf("path").forGetter(AtlasBiomeSource::getPath),
-            Codecs.nonEmptyList(BiomeEntry.CODEC.listOf()).fieldOf("biomes").forGetter(AtlasBiomeSource::getBiomeEntries)
+            Codecs.nonEmptyList(BiomeEntry.CODEC.listOf()).fieldOf("biomes").forGetter(AtlasBiomeSource::getBiomeEntries),
+            Biome.REGISTRY_CODEC.fieldOf("default").forGetter(AtlasBiomeSource::getDefaultBiome)
     ).apply(instance, AtlasBiomeSource::new));
 
     public List<BiomeEntry> getBiomeEntries() {
         return this.biomeEntries;
     }
-
+    public RegistryEntry<Biome> getDefaultBiome(){return this.defaultBiome;}
     public String getPath() {
         return this.path;
     }
@@ -72,16 +72,13 @@ public class AtlasBiomeSource extends BiomeSource {
                     if(++y >= height) break;
                 }
                 if (i % 4 == 0) {
-                    int l = data[i] << 24 | data[i+1] << 16 | data[i+2] << 8 | data[i+3];
+                    int l = data[i] << 16 | data[i+1] << 8 | data[i+2];
                     this.biomePixels[y][x++] = l;
                 }
             }
-            Atlas.LOGGER.info("imported a map for dimension " + this.path + " with a " + width + "x" + height + " map!");
+            Atlas.LOGGER.info("found biomes for dimension " + this.path + " in a " + width + "x" + height + " map!");
         } catch (IOException ioe) {
             throw new IllegalStateException("could not find biome map file at" + path + "!");
-        }
-        if (!this.biomes.containsKey(255)) {
-            throw new IllegalStateException("biome listing for dimension "+this.path+" should contain a default entry mapped to 255!");
         }
     }
 
@@ -91,9 +88,8 @@ public class AtlasBiomeSource extends BiomeSource {
         z *=4;
         x += width / 2;
         z += height / 2;
-        if (x < 0 || z < 0 || x >= width || z >= height) return biomes.get(255);
-//        Atlas.LOGGER.info(this.biomes.getOrDefault(this.biomePixels[z][x], this.biomes.get(255)).toString());
-        return this.biomes.getOrDefault(this.biomePixels[z][x], this.biomes.get(255));
+        if (x < 0 || z < 0 || x >= width || z >= height) return this.defaultBiome;
+        return this.biomes.getOrDefault(this.biomePixels[z][x], this.defaultBiome);
     }
 
     public record BiomeEntry(RegistryEntry<Biome> biome, int color) {
