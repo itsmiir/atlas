@@ -3,18 +3,19 @@
   "id": "atlas",
   "version": "${version}",
 
-  "name": "Example Mod",
-  "description": "This is an example description! Tell everyone what your mod is about!",
+  "name": "Atlas",
+  "description": "an image-based world generator",
   "authors": [
-    "Me!"
+    "miir"
   ],
   "contact": {
-    "homepage": "https://fabricmc.net/",
-    "sources": "https://github.com/FabricMC/fabric-example-mod"
+    "homepage": "https://github.com/itsmiir/",
+    "sources": "https://github.com/itsmiir/atlas",
+    "issues": "https://github.com/itsmiir/atlas/issues"
   },
 
   "license": "CC0-1.0",
-  "icon": "assets/modid/icon.png",
+  "icon": "assets/atlas/icon.png",
 
   "environment": "*",
   "entrypoints": {

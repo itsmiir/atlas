@@ -57,9 +57,8 @@ public class AtlasChunkGenerator extends ChunkGenerator {
     private final int seaLevel;
     private final int minimumY;
     private int width;
-    private RegistryEntry<ChunkGeneratorSettings> settings;
+    private final RegistryEntry<ChunkGeneratorSettings> settings;
     private int height;
-//    private String dimensionName = null;
     private int[][] heightPixels;
 
     public AtlasChunkGenerator(String path, BiomeSource biomeSource, RegistryEntry<ChunkGeneratorSettings> settings, int minimumY) {
@@ -68,7 +67,6 @@ public class AtlasChunkGenerator extends ChunkGenerator {
         this.minimumY = minimumY;
         this.path = path;
         this.settings = settings;
-        this.findHeightmap("test");
     }
 
     public void findHeightmap(String levelName) {
@@ -186,7 +184,6 @@ public class AtlasChunkGenerator extends ChunkGenerator {
         Heightmap surfaceHeightmap = chunk.getHeightmap(Heightmap.Type.WORLD_SURFACE_WG);
         BlockState defaultBlock = this.settings.value().defaultBlock();
         BlockState defaultFluid = this.settings.value().defaultFluid();
-
         int offsetX = chunk.getPos().x << 4;
         int offsetZ = chunk.getPos().z << 4;
         BlockPos.Mutable mutable = new BlockPos.Mutable();
@@ -201,7 +198,7 @@ public class AtlasChunkGenerator extends ChunkGenerator {
                         chunk.setBlockState(mutable, defaultBlock, false);
                     }
                     if (elevation < seaLevel) {
-                        for (int y = elevation+1; y < seaLevel; y++) {
+                        for (int y = elevation; y < seaLevel; y++) {
                             mutable.setY(y);
                             chunk.setBlockState(mutable, defaultFluid, false);
                         }

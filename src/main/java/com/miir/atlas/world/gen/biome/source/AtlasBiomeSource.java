@@ -10,7 +10,6 @@ import net.minecraft.util.dynamic.Codecs;
 import net.minecraft.world.biome.Biome;
 import net.minecraft.world.biome.source.BiomeSource;
 import net.minecraft.world.biome.source.util.MultiNoiseUtil;
-import org.spongepowered.asm.mixin.injection.At;
 
 import javax.imageio.ImageIO;
 import java.awt.image.Raster;
@@ -74,8 +73,6 @@ public class AtlasBiomeSource extends BiomeSource {
                 }
                 if (i % 4 == 0) {
                     int l = data[i] << 24 | data[i+1] << 16 | data[i+2] << 8 | data[i+3];
-                    if (l != 255) {
-                    }
                     this.biomePixels[y][x++] = l;
                 }
             }
