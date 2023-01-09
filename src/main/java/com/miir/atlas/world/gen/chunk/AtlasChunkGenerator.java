@@ -12,6 +12,7 @@ import net.minecraft.registry.Registry;
 import net.minecraft.registry.RegistryKeys;
 import net.minecraft.registry.entry.RegistryEntry;
 import net.minecraft.server.MinecraftServer;
+import net.minecraft.server.world.ServerWorld;
 import net.minecraft.util.Util;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.ChunkPos;
@@ -64,13 +65,13 @@ public class AtlasChunkGenerator extends ChunkGenerator {
         this.settings = settings;
     }
 
-    public void findHeightmap(MinecraftServer server) throws IOException {
+    public void findHeightmap(MinecraftServer server, String levelName) throws IOException {
         this.image.initialize(server);
-        Atlas.LOGGER.info("found elevation data for dimension "+this.getPath()+" in a "+this.image.getWidth()+"x"+this.image.getHeight()+" map!");
+        Atlas.LOGGER.info("found elevation data for dimension " + levelName + " in a " + this.image.getWidth() + "x" + this.image.getHeight() + " map: " + getPath());
     }
 
     public static final Codec<AtlasChunkGenerator> CODEC = RecordCodecBuilder.create(instance -> instance.group(
-            Codec.STRING.fieldOf("path").forGetter(AtlasChunkGenerator::getPath),
+            Codec.STRING.fieldOf("height_map").forGetter(AtlasChunkGenerator::getPath),
             BiomeSource.CODEC.fieldOf("biome_source").forGetter(AtlasChunkGenerator::getBiomeSource),
             ChunkGeneratorSettings.REGISTRY_CODEC.fieldOf("settings").forGetter(AtlasChunkGenerator::getSettings),
             Codec.INT.fieldOf("starting_y").forGetter(AtlasChunkGenerator::getMinimumY)

@@ -22,10 +22,11 @@ public abstract class MinecraftServerMixin {
         MinecraftServer server = (MinecraftServer) (Object) this;
         for (ServerWorld world : this.getWorlds()) {
             if (world.getChunkManager().getChunkGenerator() instanceof AtlasChunkGenerator cg) {
+                String dimensionName = world.getRegistryKey().getValue().toString();
                 try {
-                    cg.findHeightmap(server);
+                    cg.findHeightmap(server, dimensionName);
                     if (cg.getBiomeSource() instanceof AtlasBiomeSource abs) {
-                        abs.findBiomeMap(server);
+                        abs.findBiomeMap(server, dimensionName);
                     }
                 } catch (Exception e) {
                     throw new IllegalStateException(e);

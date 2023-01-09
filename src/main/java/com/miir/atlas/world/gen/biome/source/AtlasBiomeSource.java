@@ -30,7 +30,7 @@ public class AtlasBiomeSource extends BiomeSource {
     }
 
     public static final Codec<AtlasBiomeSource> CODEC = RecordCodecBuilder.create(instance -> instance.group(
-            Codec.STRING.fieldOf("path").forGetter(AtlasBiomeSource::getPath),
+            Codec.STRING.fieldOf("biome_map").forGetter(AtlasBiomeSource::getPath),
             Codecs.nonEmptyList(BiomeEntry.CODEC.listOf()).fieldOf("biomes").forGetter(AtlasBiomeSource::getBiomeEntries),
             Biome.REGISTRY_CODEC.fieldOf("default").forGetter(AtlasBiomeSource::getDefaultBiome)
     ).apply(instance, AtlasBiomeSource::new));
@@ -48,9 +48,9 @@ public class AtlasBiomeSource extends BiomeSource {
         return CODEC;
     }
 
-    public void findBiomeMap(MinecraftServer server) throws IOException {
+    public void findBiomeMap(MinecraftServer server, String levelName) throws IOException {
         this.image.initialize(server);
-        Atlas.LOGGER.info("found biomes for dimension " + this.getPath() + " in a " + this.image.getWidth() + "x" + this.image.getHeight() + " map!");
+        Atlas.LOGGER.info("found biomes for dimension " + levelName + " in a " + this.image.getWidth() + "x" + this.image.getHeight() + " map: " + getPath());
     }
 
     @Override

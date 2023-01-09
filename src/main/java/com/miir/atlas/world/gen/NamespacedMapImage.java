@@ -29,8 +29,8 @@ public class NamespacedMapImage {
         this.type = type;
     }
 
-    public static Raster getRasterImage(MinecraftServer server, String path, String imageName) throws IOException {
-        Identifier id = new Identifier(path, "maps/" + imageName);
+    private Raster getRasterImage(MinecraftServer server) throws IOException {
+        Identifier id = new Identifier(this.path + ".png");
         Resource imageResource = server.getResourceManager()
                 .getResource(id)
                 .orElse(null);
@@ -42,7 +42,7 @@ public class NamespacedMapImage {
     }
 
     public void initialize(MinecraftServer server) throws IOException {
-        this.raster = getRasterImage(server, this.path, this.type.name().toLowerCase());
+        this.raster = getRasterImage(server);
         this.width = raster.getWidth();
         if (this.width % 2 != 0) width -=1;
         this.height = raster.getHeight();
