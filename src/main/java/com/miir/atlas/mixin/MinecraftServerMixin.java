@@ -16,16 +16,19 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 @Mixin(MinecraftServer.class)
 public abstract class MinecraftServerMixin {
     @Shadow public abstract Iterable<ServerWorld> getWorlds();
-    @Shadow @Final protected SaveProperties saveProperties;
 
     @Inject(method = "createWorlds", at = @At("TAIL"))
     private void atlas_grabServer(WorldGenerationProgressListener worldGenerationProgressListener, CallbackInfo ci) {
-        String levelName = this.saveProperties.getLevelName();
+        MinecraftServer server = (MinecraftServer) (Object) this;
         for (ServerWorld world : this.getWorlds()) {
             if (world.getChunkManager().getChunkGenerator() instanceof AtlasChunkGenerator cg) {
-                cg.findHeightmap(levelName);
-                if (cg.getBiomeSource() instanceof AtlasBiomeSource abs) {
-                    abs.findBiomeMap(levelName);
+                try {
+                    cg.findHeightmap(server);
+                    if (cg.getBiomeSource() instanceof AtlasBiomeSource abs) {
+                        abs.findBiomeMap(server);
+                    }
+                } catch (Exception e) {
+                    throw new IllegalStateException(e);
                 }
             }
         }

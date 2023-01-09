@@ -2,15 +2,16 @@ package com.miir.atlas.world.gen.chunk;
 
 import com.google.common.annotations.VisibleForTesting;
 import com.miir.atlas.Atlas;
+import com.miir.atlas.world.gen.NamespacedMapImage;
 import com.mojang.serialization.Codec;
 import com.mojang.serialization.codecs.RecordCodecBuilder;
-import net.fabricmc.loader.api.FabricLoader;
 import net.minecraft.SharedConstants;
 import net.minecraft.block.BlockState;
 import net.minecraft.block.Blocks;
 import net.minecraft.registry.Registry;
 import net.minecraft.registry.RegistryKeys;
 import net.minecraft.registry.entry.RegistryEntry;
+import net.minecraft.server.MinecraftServer;
 import net.minecraft.util.Util;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.ChunkPos;
@@ -39,9 +40,6 @@ import net.minecraft.world.gen.carver.ConfiguredCarver;
 import net.minecraft.world.gen.chunk.*;
 import net.minecraft.world.gen.noise.NoiseConfig;
 
-import javax.imageio.ImageIO;
-import java.awt.image.Raster;
-import java.io.File;
 import java.io.IOException;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
@@ -50,46 +48,25 @@ import java.util.stream.Stream;
 
 public class AtlasChunkGenerator extends ChunkGenerator {
     private static final int MIN_GENERATION_HEIGHT = -63;
-    private final String path;
+
+    private final NamespacedMapImage image;
+
     private final int seaLevel;
     private final int minimumY;
-    private int width;
     private final RegistryEntry<ChunkGeneratorSettings> settings;
-    private int height;
-    private int[][] heightPixels;
+
 
     public AtlasChunkGenerator(String path, BiomeSource biomeSource, RegistryEntry<ChunkGeneratorSettings> settings, int minimumY) {
         super(biomeSource);
         this.seaLevel = settings.value().seaLevel();
         this.minimumY = minimumY;
-        this.path = path;
+        this.image = new NamespacedMapImage(path, NamespacedMapImage.Type.HEIGHTMAP);
         this.settings = settings;
     }
 
-    public void findHeightmap(String levelName) {
-        String path = FabricLoader.getInstance().getConfigDir().toString()+"\\"+Atlas.MOD_ID+"\\"+levelName+"\\"+this.path+"\\"+"heightmap.png";
-        try {
-            Raster raster = ImageIO.read(new File(path)).getData();
-            // top left == (0,0)
-            this.width = raster.getWidth();
-            if (this.width % 2 != 0) width -=1;
-            this.height = raster.getHeight();
-            if (this.height % 2 != 0) height -=1;
-            int[] data = raster.getPixels(0, 0, width, height, (int[]) null);
-            this.heightPixels = new int[height][width];
-            int x = 0;
-            int y = 0;
-            for (int i = 0; i < data.length; i++) {
-                if (x >= width) {
-                    x = 0;
-                    y++;
-                }
-                if (i % 4 == 0) this.heightPixels[y][x++] = data[i];
-            }
-            Atlas.LOGGER.info("found elevation data for dimension "+this.path+" in a "+width+"x"+height+" map!");
-        } catch (IOException ioe) {
-             throw new IllegalStateException("could not find heightmap file at"+path+"!");
-        }
+    public void findHeightmap(MinecraftServer server) throws IOException {
+        this.image.initialize(server);
+        Atlas.LOGGER.info("found elevation data for dimension "+this.getPath()+" in a "+this.image.getWidth()+"x"+this.image.getHeight()+" map!");
     }
 
     public static final Codec<AtlasChunkGenerator> CODEC = RecordCodecBuilder.create(instance -> instance.group(
@@ -100,17 +77,17 @@ public class AtlasChunkGenerator extends ChunkGenerator {
     ).apply(instance, AtlasChunkGenerator::new));
 
     private int getElevation(int x, int z) {
-        x += width / 2;
-        z += height / 2;
-        if (x < 0 || z < 0 || x >= width || z >= height) return -1;
-        return this.heightPixels[z][x]+minimumY;
+        x += this.image.getWidth() / 2;
+        z += this.image.getHeight() / 2;
+        if (x < 0 || z < 0 || x >= this.image.getWidth() || z >= this.image.getHeight()) return -1;
+        return this.image.getPixels()[z][x]+minimumY;
     }
 
     public RegistryEntry<ChunkGeneratorSettings> getSettings() {
         return this.settings;
     }
 
-    private String getPath() {return this.path;}
+    private String getPath() {return this.image.getPath();}
     @Override
     protected Codec<? extends ChunkGenerator> getCodec() {
         return CODEC;
