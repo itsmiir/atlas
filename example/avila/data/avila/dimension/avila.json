@@ -2,7 +2,79 @@
   "type": "minecraft:overworld",
   "generator": {
     "type": "atlas:atlas",
-    "path": "avila",
+    "height_map": "avila:map/heightmap",
+    "starting_y": 6,
+    "biome_source": {
+      "type": "atlas:atlas",
+      "biome_map": "avila:map/biomes",
+      "default": "minecraft:the_void",
+      "biomes": [
+        {
+          "biome": "minecraft:plains",
+          "color": 7180861
+        },
+        {
+          "biome": "minecraft:beach",
+          "color": 12890200
+        },
+        {
+          "biome": "minecraft:jungle",
+          "color": 3378218
+        },
+        {
+          "biome": "minecraft:sparse_jungle",
+          "color": 7570739
+        },
+        {
+          "biome": "minecraft:desert",
+          "color": 11445578
+        },
+        {
+          "biome": "minecraft:jagged_peaks",
+          "color": 16777215
+        },
+        {
+          "biome": "minecraft:meadow",
+          "color": 8373336
+        },
+        {
+          "biome": "minecraft:grove",
+          "color": 9088392
+        },
+        {
+          "biome": "minecraft:old_growth_spruce_taiga",
+          "color": 2247968
+        },
+        {
+          "biome": "minecraft:stony_shore",
+          "color": 5395026
+        },
+        {
+          "biome": "minecraft:ocean",
+          "color": 3226251
+        },
+        {
+          "biome": "minecraft:warm_ocean",
+          "color": 4672912
+        },
+        {
+          "biome": "minecraft:cold_ocean",
+          "color": 1647754
+        },
+        {
+          "biome": "minecraft:deep_ocean",
+          "color": 1054558
+        },
+        {
+          "biome": "minecraft:stony_peaks",
+          "color": 9671571
+        },
+        {
+          "biome": "minecraft:taiga",
+          "color": 3376467
+        }
+      ]
+    },
     "settings": {
       "sea_level": 63,
       "disable_mob_generation": false,
@@ -2206,78 +2278,6 @@
           }
         ]
       }
-    },
-    "starting_y": 6,
-    "biome_source": {
-      "type": "atlas:atlas",
-      "path": "avila",
-      "default": "minecraft:the_void",
-      "biomes": [
-        {
-          "biome": "minecraft:plains",
-            "color": 7180861
-        },
-        {
-          "biome": "minecraft:beach",
-          "color": 12890200
-        },
-        {
-          "biome": "minecraft:jungle",
-          "color": 3378218
-        },
-        {
-          "biome": "minecraft:sparse_jungle",
-          "color": 7570739
-        },
-        {
-          "biome": "minecraft:desert",
-          "color": 11445578
-        },
-        {
-          "biome": "minecraft:jagged_peaks",
-          "color": 16777215
-        },
-        {
-          "biome": "minecraft:meadow",
-          "color": 8373336
-        },
-        {
-          "biome": "minecraft:grove",
-          "color": 9088392
-        },
-        {
-          "biome": "minecraft:old_growth_spruce_taiga",
-          "color": 2247968
-        },
-        {
-          "biome": "minecraft:stony_shore",
-          "color": 5395026
-        },
-        {
-          "biome": "minecraft:ocean",
-          "color": 3226251
-        },
-        {
-          "biome": "minecraft:warm_ocean",
-          "color": 4672912
-        },
-        {
-          "biome": "minecraft:cold_ocean",
-          "color": 1647754
-        },
-        {
-          "biome": "minecraft:deep_ocean",
-          "color": 1054558
-        },
-        {
-          "biome": "minecraft:stony_peaks",
-          "color": 9671571
-        },
-        {
-          "biome": "minecraft:taiga",
-          "color": 3376467
-        }
-      ]
     }
   }
 }
