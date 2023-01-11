@@ -4,8 +4,11 @@
     "type": "atlas:atlas",
     "height_map": "avila:map/heightmap",
     "starting_y": 6,
+    "horizontal_scale": 1,
+    "vertical_scale": 1,
     "biome_source": {
       "type": "atlas:atlas",
+      "horizontal_scale": 1,
       "biome_map": "avila:map/biomes",
       "default": "minecraft:the_void",
       "biomes": [

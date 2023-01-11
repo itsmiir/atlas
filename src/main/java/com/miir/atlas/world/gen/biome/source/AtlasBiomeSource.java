@@ -20,19 +20,22 @@ public class AtlasBiomeSource extends BiomeSource {
     private final List<BiomeEntry> biomeEntries;
     private final RegistryEntry<Biome> defaultBiome;
     private final Int2ObjectArrayMap<RegistryEntry<Biome>> biomes = new Int2ObjectArrayMap<>();
+    private final float horizontalScale;
 
-    protected AtlasBiomeSource(String path, List<BiomeEntry> biomes, RegistryEntry<Biome> defaultBiome) {
+    protected AtlasBiomeSource(String path, List<BiomeEntry> biomes, RegistryEntry<Biome> defaultBiome, float horizontalScale) {
         super(biomes.stream().map(biomeEntry -> biomeEntry.biome).toList());
         this.image = new NamespacedMapImage(path, NamespacedMapImage.Type.BIOMES);
         this.biomeEntries = biomes;
         this.defaultBiome = defaultBiome;
+        this.horizontalScale = horizontalScale;
         for (BiomeEntry entry : this.biomeEntries) this.biomes.put(entry.color, entry.biome);
     }
 
     public static final Codec<AtlasBiomeSource> CODEC = RecordCodecBuilder.create(instance -> instance.group(
             Codec.STRING.fieldOf("biome_map").forGetter(AtlasBiomeSource::getPath),
             Codecs.nonEmptyList(BiomeEntry.CODEC.listOf()).fieldOf("biomes").forGetter(AtlasBiomeSource::getBiomeEntries),
-            Biome.REGISTRY_CODEC.fieldOf("default").forGetter(AtlasBiomeSource::getDefaultBiome)
+            Biome.REGISTRY_CODEC.fieldOf("default").forGetter(AtlasBiomeSource::getDefaultBiome),
+            Codec.FLOAT.fieldOf("horizontal_scale").forGetter(AtlasBiomeSource::getHorizontalScale)
     ).apply(instance, AtlasBiomeSource::new));
 
     public List<BiomeEntry> getBiomeEntries() {
@@ -42,6 +45,7 @@ public class AtlasBiomeSource extends BiomeSource {
     public String getPath() {
         return this.image.getPath();
     }
+    public float getHorizontalScale() {return this.horizontalScale;}
 
     @Override
     protected Codec<AtlasBiomeSource> getCodec() {
@@ -59,6 +63,8 @@ public class AtlasBiomeSource extends BiomeSource {
         z *=4;
         x += this.image.getWidth() / 2;
         z += this.image.getHeight() / 2;
+        x = Math.round(x/horizontalScale);
+        z = Math.round(z/horizontalScale);
         if (x < 0 || z < 0 || x >= this.image.getWidth() || z >= this.image.getHeight()) return this.defaultBiome;
         return this.biomes.getOrDefault(this.image.getPixels()[z][x], this.defaultBiome);
     }

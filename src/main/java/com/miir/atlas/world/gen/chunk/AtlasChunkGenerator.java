@@ -47,19 +47,22 @@ import java.util.concurrent.Executor;
 import java.util.stream.Stream;
 
 public class AtlasChunkGenerator extends ChunkGenerator {
-    private static final int MIN_GENERATION_HEIGHT = -63;
 
     private final NamespacedMapImage image;
 
     private final int seaLevel;
     private final int minimumY;
     private final RegistryEntry<ChunkGeneratorSettings> settings;
+    private final float verticalScale;
+    private final float horizontalScale;
 
 
-    public AtlasChunkGenerator(String path, BiomeSource biomeSource, RegistryEntry<ChunkGeneratorSettings> settings, int minimumY) {
+    public AtlasChunkGenerator(String path, BiomeSource biomeSource, RegistryEntry<ChunkGeneratorSettings> settings, int minimumY, float verticalScale, float horizontalScale) {
         super(biomeSource);
         this.seaLevel = settings.value().seaLevel();
         this.minimumY = minimumY;
+        this.verticalScale = verticalScale;
+        this.horizontalScale = horizontalScale;
         this.image = new NamespacedMapImage(path, NamespacedMapImage.Type.HEIGHTMAP);
         this.settings = settings;
     }
@@ -73,24 +76,39 @@ public class AtlasChunkGenerator extends ChunkGenerator {
             Codec.STRING.fieldOf("height_map").forGetter(AtlasChunkGenerator::getPath),
             BiomeSource.CODEC.fieldOf("biome_source").forGetter(AtlasChunkGenerator::getBiomeSource),
             ChunkGeneratorSettings.REGISTRY_CODEC.fieldOf("settings").forGetter(AtlasChunkGenerator::getSettings),
-            Codec.INT.fieldOf("starting_y").forGetter(AtlasChunkGenerator::getMinimumY)
+            Codec.INT.fieldOf("starting_y").forGetter(AtlasChunkGenerator::getMinimumY),
+            Codec.FLOAT.fieldOf("vertical_scale").forGetter(AtlasChunkGenerator::getVerticalScale),
+            Codec.FLOAT.fieldOf("horizontal_scale").forGetter(AtlasChunkGenerator::getHorizontalScale)
     ).apply(instance, AtlasChunkGenerator::new));
 
     private int getElevation(int x, int z) {
         x += this.image.getWidth() / 2;
         z += this.image.getHeight() / 2;
         if (x < 0 || z < 0 || x >= this.image.getWidth() || z >= this.image.getHeight()) return -1;
-        return (this.image.getPixels()[z][x])+minimumY;
+        float xR = (x/horizontalScale);
+        float zR = (z/horizontalScale);
+        int truncatedX = (int)Math.floor(xR);
+        int truncatedZ = (int)Math.floor(zR);
+        double d = this.image.getPixels()[truncatedZ][truncatedX];
+        return (int) Math.round(this.verticalScale*(d)+minimumY);
     }
 
-    public RegistryEntry<ChunkGeneratorSettings> getSettings() {
-        return this.settings;
-    }
+    public float getVerticalScale() {return this.verticalScale;}
+    public float getHorizontalScale() {return this.horizontalScale;}
+    public RegistryEntry<ChunkGeneratorSettings> getSettings() {return this.settings;}
 
     private String getPath() {return this.image.getPath();}
     @Override
     protected Codec<? extends ChunkGenerator> getCodec() {
         return CODEC;
+    }
+
+    @Override
+    public CompletableFuture<Chunk> populateBiomes(Executor executor, NoiseConfig noiseConfig, Blender blender, StructureAccessor structureAccessor, Chunk chunk) {
+        return CompletableFuture.supplyAsync(Util.debugSupplier("init_biomes", () -> {
+            chunk.populateBiomes(this.biomeSource, noiseConfig.getMultiNoiseSampler());
+            return chunk;
+        }), Util.getMainWorkerExecutor());
     }
 
     @Override
@@ -215,14 +233,14 @@ public class AtlasChunkGenerator extends ChunkGenerator {
         if (elevation <= 0) return new VerticalBlockSample(0, new BlockState[]{Blocks.AIR.getDefaultState()});
         if (elevation < seaLevel) {
             return new VerticalBlockSample(
-                    MIN_GENERATION_HEIGHT,
+                    this.settings.value().generationShapeConfig().minimumY(),
                     Stream.concat(
                             Stream.generate(() -> this.settings.value().defaultBlock()).limit(elevation),
                             Stream.generate(() -> this.settings.value().defaultFluid()).limit(seaLevel - elevation)
             ).toArray(BlockState[]::new));
         }
             return new VerticalBlockSample(
-                    MIN_GENERATION_HEIGHT,
+                    this.settings.value().generationShapeConfig().minimumY(),
                     Stream.generate(() -> this.settings.value().defaultBlock()).limit(elevation).toArray(BlockState[]::new)
 
             );

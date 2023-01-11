@@ -1,4 +1,4 @@
-# how to create a datapack that uses atlas
+# how to create a dimension with atlas
 
 assuming you've [set up your datapack](https://minecraft.fandom.com/wiki/Data_pack), create a new dimension file at `namespace/dimension/<name>.json`.
 
@@ -9,6 +9,8 @@ the example datapack included here [has a dimension file example](./avila/data/a
 to enable atlas for this dimension, give the chunk generator a `type` of `atlas:atlas`. the atlas generator requires a **heightmap**. this needs to be an 8bpc (bits-per-channel) RGBA png file; you can save to this format easily with the [GIMP image editor](https://www.gimp.org/). place this image in your datapack anywhere, though know that the convention is to place it in the `atlas/map` folder as `heightmap.png`, so `namespace/atlas/map/heightmap.png` for example. you then need to link to this image in the generator's `height_map` key. following the conventions, this would be `namespace:atlas/map/heightmap`.
 
 note that you'll most likely need to adjust the `starting_y` based on the heightmap. a heightmap pixel's value corresponds to its y position without being offset by `starting_y`. this means that if the heightmap's ocean pixel color is `#272727`, with each channel being decimal `39`, and the `starting_y` is `20`, then the ocean floor will begin at y `59`. the sea level begins at y `63`, which would give you four blocks of ocean in this case.
+
+the `vertical_scale` and `horizontal_scale` factors scale how many blocks correspond to a pixel. a `vertical_scale` of 1 means that each of the possible 256 values in the heightmap corresponds to an elevation change of one block. a `horizontal_scale` of 2 means that each pixel on the map represents a 2x2 block area ingame. **`horizontal_scale` needs to be set for both the chunk generator and the biome source.**
 
 ## biome sources & biome maps
 
