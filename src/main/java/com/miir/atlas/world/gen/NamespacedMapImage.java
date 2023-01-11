@@ -19,7 +19,6 @@ public class NamespacedMapImage {
     private final String path;
     private final Type type;
 
-    private Raster raster;
     private int width;
     private int height;
     private int[][] pixels;
@@ -42,28 +41,24 @@ public class NamespacedMapImage {
     }
 
     public void initialize(MinecraftServer server) throws IOException {
-        this.raster = getRasterImage(server);
+        Raster raster = getRasterImage(server);
         this.width = raster.getWidth();
         if (this.width % 2 != 0) width -=1;
         this.height = raster.getHeight();
         if (this.height % 2 != 0) height -=1;
         this.pixels = new int[height][width];
-        populate();
+        populate(raster);
     }
 
-    private int[] getRasterData() {
-        return this.raster.getPixels(0, 0, this.width, this.height, (int[]) null);
-    }
-
-    private void populate() {
+    private void populate(Raster raster) {
         switch (this.type) {
-            case HEIGHTMAP -> populateHeightmapPixels();
-            case BIOMES -> populateBiomePixels();
+            case HEIGHTMAP -> populateHeightmapPixels(raster);
+            case BIOMES -> populateBiomePixels(raster);
         }
     }
 
-    private void populateHeightmapPixels() {
-        int[] data = getRasterData();
+    private void populateHeightmapPixels(Raster raster) {
+        int[] data = raster.getPixels(0, 0, this.width, this.height, (int[]) null);
         int x = 0;
         int y = 0;
         for (int i = 0; i < data.length; i++) {
@@ -75,8 +70,8 @@ public class NamespacedMapImage {
         }
     }
 
-    private void populateBiomePixels() {
-        int[] data = getRasterData();
+    private void populateBiomePixels(Raster raster) {
+        int[] data = raster.getPixels(0, 0, this.width, this.height, (int[]) null);
         int x = 0;
         int y = 0;
         for (int i = 0; i < data.length; i++) {

@@ -12,7 +12,6 @@ import net.minecraft.registry.Registry;
 import net.minecraft.registry.RegistryKeys;
 import net.minecraft.registry.entry.RegistryEntry;
 import net.minecraft.server.MinecraftServer;
-import net.minecraft.server.world.ServerWorld;
 import net.minecraft.util.Util;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.ChunkPos;
@@ -81,7 +80,7 @@ public class AtlasChunkGenerator extends ChunkGenerator {
         x += this.image.getWidth() / 2;
         z += this.image.getHeight() / 2;
         if (x < 0 || z < 0 || x >= this.image.getWidth() || z >= this.image.getHeight()) return -1;
-        return this.image.getPixels()[z][x]+minimumY;
+        return (this.image.getPixels()[z][x])+minimumY;
     }
 
     public RegistryEntry<ChunkGeneratorSettings> getSettings() {
