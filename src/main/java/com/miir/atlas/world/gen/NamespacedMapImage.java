@@ -89,7 +89,7 @@ public class NamespacedMapImage {
     public String getPath() {
         return path;
     }
-
+    public Type getType() {return type;}
     public int getWidth() {
         return width;
     }

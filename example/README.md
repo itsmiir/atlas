@@ -10,7 +10,8 @@ to enable atlas for this dimension, give the chunk generator a `type` of `atlas:
 
 note that you'll most likely need to adjust the `starting_y` based on the heightmap. a heightmap pixel's value corresponds to its y position without being offset by `starting_y`. this means that if the heightmap's ocean pixel color is `#272727`, with each channel being decimal `39`, and the `starting_y` is `20`, then the ocean floor will begin at y `59`. the sea level begins at y `63`, which would give you four blocks of ocean in this case.
 
-the `vertical_scale` and `horizontal_scale` factors scale how many blocks correspond to a pixel. a `vertical_scale` of 1 means that each of the possible 256 values in the heightmap corresponds to an elevation change of one block. a `horizontal_scale` of 2 means that each pixel on the map represents a 2x2 block area ingame. **`horizontal_scale` needs to be set for both the chunk generator and the biome source.**
+
+the `vertical_scale` and `horizontal_scale` factors scale how many blocks correspond to a pixel. a `vertical_scale` of 1 means that each of the possible 256 values in the heightmap corresponds to an elevation change of one block. a `horizontal_scale` of 2 means that each pixel on the map represents a 2x2 block area ingame. **`horizontal_scale` needs to be set for both the chunk generator and the biome source.** note: these settings are experimental, expect breaking changes! for now, it's best to pre-upscale your maps before importing them
 
 ## biome sources & biome maps
 
