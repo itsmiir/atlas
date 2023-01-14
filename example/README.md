@@ -1,4 +1,4 @@
-# how to create a datapack for use with atlas
+# how to create a datapack for use with atlas [1.19.2] (for 1.19.3, click [here](https://github.com/itsmiir/atlas/tree/1.19/example/README.md))
 
 - for the `generator` option, put `atlas:atlas`.
 - you can use any biome source you want, but to generate the biomes based on an iamge, use `atlas:atlas` as the biome source.
