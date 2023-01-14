@@ -100,7 +100,7 @@ public class AtlasChunkGenerator extends ChunkGenerator {
     }
 
     private int getElevation(int x, int z) {
-        x += this.heightmap.getWidth() / 2;
+        x += this.heightmap.getWidth() / 2; // these will always be even numbers
         z += this.heightmap.getHeight() / 2;
         if (x < 0 || z < 0 || x >= this.heightmap.getWidth() || z >= this.heightmap.getHeight()) return -1;
         float xR = (x/horizontalScale);
@@ -112,20 +112,15 @@ public class AtlasChunkGenerator extends ChunkGenerator {
     }
 
     public float lerpElevation(int truncatedX, float xR, int truncatedZ, float zR) {
-        float thisHeight = this.heightmap.getPixels()[truncatedZ][truncatedX];
         int dx = 0, dz = 0;
-        if (xR < 0.5) dx = -1;
-        if (zR < 0.5) dz = -1;
         int u0 = Math.max(0, truncatedX + dx), v0 = Math.max(0, truncatedZ + dz);
         int u1 = Math.min(this.heightmap.getHeight(), u0 + 1),    v1 = Math.min(v0 + 1, this.heightmap.getHeight());
-        float i00 = thisHeight, i01 = thisHeight, i10 = thisHeight, i11 = thisHeight;
+        float i00, i01, i10, i11;
         i00 = this.heightmap.getPixels()[v0][u0];
         i01 = this.heightmap.getPixels()[v1][u0];
         i10 = this.heightmap.getPixels()[v0][u1];
         i11 = this.heightmap.getPixels()[v1][u1];
-        xR = dx == -1 ? 1 - xR : xR; // ensure that lerping is not done backwards
-        zR = dz == -1 ? 1 - zR : zR;
-        return (float) MathHelper.lerp2(xR, zR, i01, i11, i00, i10);
+        return (float) MathHelper.lerp2(Math.abs(xR), Math.abs(zR), i00, i10, i01, i11);
     }
 
     private int getWaterTable(int x, int z) {
