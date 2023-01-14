@@ -15,6 +15,7 @@ import net.minecraft.server.MinecraftServer;
 import net.minecraft.util.Util;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.ChunkPos;
+import net.minecraft.util.math.MathHelper;
 import net.minecraft.util.math.random.CheckedRandom;
 import net.minecraft.util.math.random.ChunkRandom;
 import net.minecraft.util.math.random.RandomSeed;
@@ -42,14 +43,15 @@ import net.minecraft.world.gen.noise.NoiseConfig;
 
 import java.io.IOException;
 import java.util.List;
+import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.Executor;
 import java.util.stream.Stream;
 
 public class AtlasChunkGenerator extends ChunkGenerator {
 
-    private final NamespacedMapImage image;
-
+    private final NamespacedMapImage heightmap;
+    private final NamespacedMapImage aquifer;
     private final int seaLevel;
     private final int minimumY;
     private final RegistryEntry<ChunkGeneratorSettings> settings;
@@ -57,47 +59,92 @@ public class AtlasChunkGenerator extends ChunkGenerator {
     private final float horizontalScale;
 
 
-    public AtlasChunkGenerator(String path, BiomeSource biomeSource, RegistryEntry<ChunkGeneratorSettings> settings, int minimumY, float verticalScale, float horizontalScale) {
+    public AtlasChunkGenerator(String path, Optional<String> aquiferPath, BiomeSource biomeSource, RegistryEntry<ChunkGeneratorSettings> settings, int minimumY, Optional<Float> verticalScale, Optional<Float> horizontalScale) {
         super(biomeSource);
         this.seaLevel = settings.value().seaLevel();
         this.minimumY = minimumY;
-        this.verticalScale = verticalScale;
-        this.horizontalScale = horizontalScale;
-        this.image = new NamespacedMapImage(path, NamespacedMapImage.Type.HEIGHTMAP);
+        this.verticalScale = verticalScale.orElse(1f);
+        this.horizontalScale = horizontalScale.orElse(1f);
+        this.heightmap = new NamespacedMapImage(path, NamespacedMapImage.Type.HEIGHTMAP);
+        if (aquiferPath.isPresent()) {
+            this.aquifer = new NamespacedMapImage(path, NamespacedMapImage.Type.AQUIFER);
+        } else {
+            this.aquifer = null;
+        }
         this.settings = settings;
     }
 
     public void findHeightmap(MinecraftServer server, String levelName) throws IOException {
-        this.image.initialize(server);
-        Atlas.LOGGER.info("found elevation data for dimension " + levelName + " in a " + this.image.getWidth() + "x" + this.image.getHeight() + " map: " + getPath());
+        this.heightmap.initialize(server);
+        Atlas.LOGGER.info("found elevation data for dimension " + levelName + " in a " + this.heightmap.getWidth() + "x" + this.heightmap.getHeight() + " map: " + getPath());
+        try {
+            this.aquifer.initialize(server);
+            Atlas.LOGGER.info("found aquifer data for dimension " + levelName + " in a " + this.aquifer.getWidth() + "x" + this.aquifer.getHeight() + " map: " + getPath());
+        } catch (Exception e) {
+            Atlas.LOGGER.warn("couldn't find aquifer for dimension " + levelName+", defaulting to sea level!");
+        }
     }
 
     public static final Codec<AtlasChunkGenerator> CODEC = RecordCodecBuilder.create(instance -> instance.group(
             Codec.STRING.fieldOf("height_map").forGetter(AtlasChunkGenerator::getPath),
+            Codec.STRING.optionalFieldOf("aquifer").forGetter(AtlasChunkGenerator::getAquiferPath),
             BiomeSource.CODEC.fieldOf("biome_source").forGetter(AtlasChunkGenerator::getBiomeSource),
             ChunkGeneratorSettings.REGISTRY_CODEC.fieldOf("settings").forGetter(AtlasChunkGenerator::getSettings),
             Codec.INT.fieldOf("starting_y").forGetter(AtlasChunkGenerator::getMinimumY),
-            Codec.FLOAT.fieldOf("vertical_scale").forGetter(AtlasChunkGenerator::getVerticalScale),
-            Codec.FLOAT.fieldOf("horizontal_scale").forGetter(AtlasChunkGenerator::getHorizontalScale)
+            Codec.FLOAT.optionalFieldOf("vertical_scale").forGetter(AtlasChunkGenerator::getVerticalScale),
+            Codec.FLOAT.optionalFieldOf("horizontal_scale").forGetter(AtlasChunkGenerator::getHorizontalScale)
     ).apply(instance, AtlasChunkGenerator::new));
 
+    private Optional<String> getAquiferPath() {
+        return this.aquifer == null ? Optional.empty() : Optional.of(this.aquifer.getPath());
+    }
+
     private int getElevation(int x, int z) {
-        x += this.image.getWidth() / 2;
-        z += this.image.getHeight() / 2;
-        if (x < 0 || z < 0 || x >= this.image.getWidth() || z >= this.image.getHeight()) return -1;
+        x += this.heightmap.getWidth() / 2;
+        z += this.heightmap.getHeight() / 2;
+        if (x < 0 || z < 0 || x >= this.heightmap.getWidth() || z >= this.heightmap.getHeight()) return -1;
         float xR = (x/horizontalScale);
         float zR = (z/horizontalScale);
         int truncatedX = (int)Math.floor(xR);
         int truncatedZ = (int)Math.floor(zR);
-        double d = this.image.getPixels()[truncatedZ][truncatedX];
+        double d = this.lerpElevation(truncatedX, xR-truncatedX, truncatedZ, zR-truncatedZ);
         return (int) Math.round(this.verticalScale*(d)+minimumY);
     }
 
-    public float getVerticalScale() {return this.verticalScale;}
-    public float getHorizontalScale() {return this.horizontalScale;}
+    public float lerpElevation(int truncatedX, float xR, int truncatedZ, float zR) {
+        float thisHeight = this.heightmap.getPixels()[truncatedZ][truncatedX];
+        int dx = 0, dz = 0;
+        if (xR < 0.5) dx = -1;
+        if (zR < 0.5) dz = -1;
+        int u0 = Math.max(0, truncatedX + dx), v0 = Math.max(0, truncatedZ + dz);
+        int u1 = Math.min(this.heightmap.getHeight(), u0 + 1),    v1 = Math.min(v0 + 1, this.heightmap.getHeight());
+        float i00 = thisHeight, i01 = thisHeight, i10 = thisHeight, i11 = thisHeight;
+        i00 = this.heightmap.getPixels()[v0][u0];
+        i01 = this.heightmap.getPixels()[v1][u0];
+        i10 = this.heightmap.getPixels()[v0][u1];
+        i11 = this.heightmap.getPixels()[v1][u1];
+        xR = dx == -1 ? 1 - xR : xR; // ensure that lerping is not done backwards
+        zR = dz == -1 ? 1 - zR : zR;
+        return (float) MathHelper.lerp2(xR, zR, i01, i11, i00, i10);
+    }
+
+    private int getWaterTable(int x, int z) {
+        x += this.heightmap.getWidth() / 2;
+        z += this.heightmap.getHeight() / 2;
+        if (x < 0 || z < 0 || x >= this.heightmap.getWidth() || z >= this.heightmap.getHeight()) return -1;
+        float xR = (x/horizontalScale);
+        float zR = (z/horizontalScale);
+        int truncatedX = (int)Math.floor(xR);
+        int truncatedZ = (int)Math.floor(zR);
+        double d = this.heightmap.getPixels()[truncatedZ][truncatedX];
+        return (int)Math.round(d)+minimumY;
+    }
+
+    public Optional<Float> getVerticalScale() {return this.verticalScale == 0 ? Optional.of(1f) : Optional.of(this.verticalScale);}
+    public Optional<Float> getHorizontalScale() {return this.horizontalScale == 0 ? Optional.of(1f) : Optional.of(this.horizontalScale);}
     public RegistryEntry<ChunkGeneratorSettings> getSettings() {return this.settings;}
 
-    private String getPath() {return this.image.getPath();}
+    private String getPath() {return this.heightmap.getPath();}
     @Override
     protected Codec<? extends ChunkGenerator> getCodec() {
         return CODEC;
@@ -187,6 +234,7 @@ public class AtlasChunkGenerator extends ChunkGenerator {
             mutable.setX(x);
             for (int z = 0; z < 16; z++) {
                 mutable.setZ(z);
+                int seaLevel = Math.max(getWaterTable(x, z), this.seaLevel);
                 int elevation = this.getElevation(x+offsetX, z+offsetZ);
                 if (elevation != -1 && elevation >= minY) {
                     for (int y = minY; y < elevation; y++) {

@@ -13,7 +13,8 @@ public class NamespacedMapImage {
 
     public enum Type {
         HEIGHTMAP,
-        BIOMES
+        BIOMES,
+        AQUIFER
     }
 
     private final String path;
@@ -52,12 +53,12 @@ public class NamespacedMapImage {
 
     private void populate(Raster raster) {
         switch (this.type) {
-            case HEIGHTMAP -> populateHeightmapPixels(raster);
-            case BIOMES -> populateBiomePixels(raster);
+            case HEIGHTMAP, AQUIFER -> populateGrayscale(raster);
+            case BIOMES -> populateColor(raster);
         }
     }
 
-    private void populateHeightmapPixels(Raster raster) {
+    private void populateGrayscale(Raster raster) {
         int[] data = raster.getPixels(0, 0, this.width, this.height, (int[]) null);
         int x = 0;
         int y = 0;
@@ -70,7 +71,7 @@ public class NamespacedMapImage {
         }
     }
 
-    private void populateBiomePixels(Raster raster) {
+    private void populateColor(Raster raster) {
         int[] data = raster.getPixels(0, 0, this.width, this.height, (int[]) null);
         int x = 0;
         int y = 0;
