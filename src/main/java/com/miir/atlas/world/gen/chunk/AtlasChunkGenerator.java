@@ -43,13 +43,13 @@ import net.minecraft.world.gen.noise.NoiseConfig;
 
 import java.io.IOException;
 import java.util.List;
+import java.util.NoSuchElementException;
 import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.Executor;
 import java.util.stream.Stream;
 
 public class AtlasChunkGenerator extends ChunkGenerator {
-
     private final NamespacedMapImage heightmap;
     private final NamespacedMapImage aquifer;
     private final int seaLevel;
@@ -66,21 +66,17 @@ public class AtlasChunkGenerator extends ChunkGenerator {
         this.verticalScale = verticalScale.orElse(1f);
         this.horizontalScale = horizontalScale.orElse(1f);
         this.heightmap = new NamespacedMapImage(path, NamespacedMapImage.Type.HEIGHTMAP);
-        if (aquiferPath.isPresent()) {
-            this.aquifer = new NamespacedMapImage(path, NamespacedMapImage.Type.AQUIFER);
-        } else {
-            this.aquifer = null;
-        }
+        this.aquifer = aquiferPath.map(s -> new NamespacedMapImage(s, NamespacedMapImage.Type.AQUIFER)).orElse(null);
         this.settings = settings;
     }
 
-    public void findHeightmap(MinecraftServer server, String levelName) throws IOException {
-        this.heightmap.initialize(server);
+    public void findMaps(MinecraftServer server, String levelName) throws IOException {
+        this.heightmap.initialize(this.getPath(), server);
         Atlas.LOGGER.info("found elevation data for dimension " + levelName + " in a " + this.heightmap.getWidth() + "x" + this.heightmap.getHeight() + " map: " + getPath());
         try {
-            this.aquifer.initialize(server);
-            Atlas.LOGGER.info("found aquifer data for dimension " + levelName + " in a " + this.aquifer.getWidth() + "x" + this.aquifer.getHeight() + " map: " + getPath());
-        } catch (Exception e) {
+            this.aquifer.initialize(this.getAquiferPath().get(), server);
+            Atlas.LOGGER.info("found aquifer data for dimension " + levelName + " in a " + this.aquifer.getWidth() + "x" + this.aquifer.getHeight() + " map: " + getAquiferPath());
+        } catch (NoSuchElementException e) {
             Atlas.LOGGER.warn("couldn't find aquifer for dimension " + levelName+", defaulting to sea level!");
         }
     }
@@ -100,11 +96,11 @@ public class AtlasChunkGenerator extends ChunkGenerator {
     }
 
     private int getElevation(int x, int z) {
-        x += this.heightmap.getWidth() / 2; // these will always be even numbers
-        z += this.heightmap.getHeight() / 2;
-        if (x < 0 || z < 0 || x >= this.heightmap.getWidth() || z >= this.heightmap.getHeight()) return -1;
         float xR = (x/horizontalScale);
         float zR = (z/horizontalScale);
+        xR += this.heightmap.getWidth()  / 2f; // these will always be even numbers
+        zR += this.heightmap.getHeight() / 2f;
+        if (xR < 0 || zR < 0 || xR >= this.heightmap.getWidth() || zR >= this.heightmap.getHeight()) return -1;
         int truncatedX = (int)Math.floor(xR);
         int truncatedZ = (int)Math.floor(zR);
         double d = this.lerpElevation(truncatedX, xR-truncatedX, truncatedZ, zR-truncatedZ);
@@ -114,25 +110,37 @@ public class AtlasChunkGenerator extends ChunkGenerator {
     public float lerpElevation(int truncatedX, float xR, int truncatedZ, float zR) {
         int dx = 0, dz = 0;
         int u0 = Math.max(0, truncatedX + dx), v0 = Math.max(0, truncatedZ + dz);
-        int u1 = Math.min(this.heightmap.getHeight(), u0 + 1),    v1 = Math.min(v0 + 1, this.heightmap.getHeight());
+        int u1 = Math.min(this.heightmap.getWidth()-1, u0 + 1),    v1 = Math.min(v0 + 1, this.heightmap.getHeight()-1);
         float i00, i01, i10, i11;
+//        this.heightmap.loadPixelsInRange(u0, v0, true, Atlas.GEN_RADIUS);
         i00 = this.heightmap.getPixels()[v0][u0];
         i01 = this.heightmap.getPixels()[v1][u0];
         i10 = this.heightmap.getPixels()[v0][u1];
         i11 = this.heightmap.getPixels()[v1][u1];
         return (float) MathHelper.lerp2(Math.abs(xR), Math.abs(zR), i00, i10, i01, i11);
     }
+    public float lerpAquifer(int truncatedX, float xR, int truncatedZ, float zR) {
+        int u0 = Math.max(0, truncatedX), v0 = Math.max(0, truncatedZ);
+        int u1 = Math.min(this.aquifer.getWidth()-1, u0 + 1),    v1 = Math.min(v0 + 1, this.aquifer.getHeight()-1);
+        float i00, i01, i10, i11;
+//        this.aquifer.loadPixelsInRange(u0, v0, true, Atlas.GEN_RADIUS);
+        i00 = this.aquifer.getPixels()[v0][u0];
+        i01 = this.aquifer.getPixels()[v1][u0];
+        i10 = this.aquifer.getPixels()[v0][u1];
+        i11 = this.aquifer.getPixels()[v1][u1];
+        return (float) MathHelper.lerp2(Math.abs(xR), Math.abs(zR), i00, i10, i01, i11);
+    }
 
-    private int getWaterTable(int x, int z) {
-        x += this.heightmap.getWidth() / 2;
-        z += this.heightmap.getHeight() / 2;
-        if (x < 0 || z < 0 || x >= this.heightmap.getWidth() || z >= this.heightmap.getHeight()) return -1;
+    private int getAquifer(int x, int z) {
         float xR = (x/horizontalScale);
         float zR = (z/horizontalScale);
+        xR += this.aquifer.getWidth() / 2f; // these will always be even numbers
+        zR += this.aquifer.getHeight() / 2f;
+        if (xR < 0 || zR < 0 || xR >= this.aquifer.getWidth() || zR >= this.aquifer.getHeight()) return -1;
         int truncatedX = (int)Math.floor(xR);
         int truncatedZ = (int)Math.floor(zR);
-        double d = this.heightmap.getPixels()[truncatedZ][truncatedX];
-        return (int)Math.round(d)+minimumY;
+        double d = this.lerpAquifer(truncatedX, xR-truncatedX, truncatedZ, zR-truncatedZ);
+        return (int) Math.round(this.verticalScale*(d)+minimumY);
     }
 
     public Optional<Float> getVerticalScale() {return this.verticalScale == 0 ? Optional.of(1f) : Optional.of(this.verticalScale);}
@@ -213,8 +221,10 @@ public class AtlasChunkGenerator extends ChunkGenerator {
     }
 
     @Override
-    public CompletableFuture<Chunk> populateNoise(Executor executor, Blender blender, NoiseConfig noiseConfig, StructureAccessor structureAccessor, Chunk chunk2) {
-        return CompletableFuture.supplyAsync(Util.debugSupplier("wgen_fill_noise", () -> this.populateNoise(chunk2)), Util.getMainWorkerExecutor());
+    public CompletableFuture<Chunk> populateNoise(Executor executor, Blender blender, NoiseConfig noiseConfig, StructureAccessor structureAccessor, Chunk chunk) {
+        this.heightmap.loadPixelsInRange(chunk.getPos().x << 4, chunk.getPos().z << 4, true, Atlas.GEN_RADIUS);
+        this.aquifer.loadPixelsInRange(chunk.getPos().x << 4, chunk.getPos().z << 4, true, Atlas.GEN_RADIUS);
+        return CompletableFuture.supplyAsync(Util.debugSupplier("wgen_fill_noise", () -> this.populateNoise(chunk)), Util.getMainWorkerExecutor());
     }
     private Chunk populateNoise(Chunk chunk) {
         int minY = settings.value().generationShapeConfig().minimumY();
@@ -229,8 +239,8 @@ public class AtlasChunkGenerator extends ChunkGenerator {
             mutable.setX(x);
             for (int z = 0; z < 16; z++) {
                 mutable.setZ(z);
-                int seaLevel = Math.max(getWaterTable(x, z), this.seaLevel);
-                int elevation = this.getElevation(x+offsetX, z+offsetZ);
+                int seaLevel = Math.min(Math.max(getAquifer(x+offsetX, z+offsetZ), this.seaLevel), this.minimumY+this.getWorldHeight());
+                int elevation = Math.min(this.getElevation(x+offsetX, z+offsetZ), this.minimumY+this.getWorldHeight());
                 if (elevation != -1 && elevation >= minY) {
                     for (int y = minY; y < elevation; y++) {
                         mutable.setY(y);
@@ -240,12 +250,14 @@ public class AtlasChunkGenerator extends ChunkGenerator {
                         for (int y = elevation; y < seaLevel; y++) {
                             mutable.setY(y);
                             chunk.setBlockState(mutable, defaultFluid, false);
+                            chunk.markBlockForPostProcessing(mutable);
                         }
                         surfaceHeightmap.trackUpdate(x, elevation, z, defaultFluid);
                     } else {
                         surfaceHeightmap.trackUpdate(x, elevation, z, defaultBlock);
                     }
                     oceanHeightmap.trackUpdate(x, elevation, z, defaultBlock);
+
                 }
             }
         }
@@ -308,4 +320,6 @@ public class AtlasChunkGenerator extends ChunkGenerator {
             return fluidLevel2;
         };
     }
+
+
 }
