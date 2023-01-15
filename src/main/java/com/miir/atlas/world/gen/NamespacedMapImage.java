@@ -36,6 +36,7 @@ public class NamespacedMapImage {
     }
 
     public int[][] loadPixelsInRange(int x, int z, boolean grayscale, int radius) {
+        if (x >= this.width || x < 0 || z > this.height || z < 0) return this.pixels;
         if (!this.initialized) {
             throw new IllegalStateException("tried to read from an uninitialized atlas!");
         }
@@ -47,6 +48,11 @@ public class NamespacedMapImage {
     }
 
     private int[][] getOrDownloadPixels(int x0, int z0, int x1, int z1, boolean grayscale) {
+        if (x0 >= this.width) x0 = this.width-1;
+        if (x1 >= this.width) x1 = this.width-1;
+        if (z0 >= this.height) z0 = this.height-1;
+        if (z1 >= this.height) z1 = this.height-1;
+
         if (this.pixels[z0][x0] == EMPTY)  {
             try {
                 BufferedImage image = getImage(path, Atlas.SERVER);
