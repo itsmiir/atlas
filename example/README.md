@@ -1,4 +1,6 @@
-# how to create a dimension with atlas [1.19.3] (for 1.19.2, click [here](https://github.com/itsmiir/atlas/tree/1.19.2/example/README.md))
+
+# how to create a datapack for use with atlas [1.19.2] (for 1.19.3, click [here](https://github.com/itsmiir/atlas/tree/1.19/example/README.md))
+
 
 assuming you've [set up your datapack](https://minecraft.fandom.com/wiki/Data_pack), create a new dimension file at `namespace/dimension/<name>.json`.
 

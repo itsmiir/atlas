@@ -9,17 +9,18 @@ import com.mojang.serialization.codecs.RecordCodecBuilder;
 import net.minecraft.SharedConstants;
 import net.minecraft.block.BlockState;
 import net.minecraft.block.Blocks;
-import net.minecraft.registry.Registry;
-import net.minecraft.registry.RegistryKeys;
-import net.minecraft.registry.entry.RegistryEntry;
-import net.minecraft.server.MinecraftServer;
+import net.minecraft.structure.StructureSet;
 import net.minecraft.util.Util;
+import net.minecraft.util.dynamic.RegistryOps;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.ChunkPos;
 import net.minecraft.util.math.MathHelper;
+import net.minecraft.util.math.noise.DoublePerlinNoiseSampler;
 import net.minecraft.util.math.random.CheckedRandom;
 import net.minecraft.util.math.random.ChunkRandom;
 import net.minecraft.util.math.random.RandomSeed;
+import net.minecraft.util.registry.Registry;
+import net.minecraft.util.registry.RegistryEntry;
 import net.minecraft.world.ChunkRegion;
 import net.minecraft.world.HeightLimitView;
 import net.minecraft.world.Heightmap;
@@ -60,11 +61,14 @@ public class AtlasChunkGenerator extends ChunkGenerator {
     private final RegistryEntry<ChunkGeneratorSettings> settings;
     private final float verticalScale;
     private final float horizontalScale;
+    private int height;
+    private int[][] heightPixels;
+    private final Registry<DoublePerlinNoiseSampler.NoiseParameters> noiseRegistry;
 
-
-    public AtlasChunkGenerator(String path, Optional<String> aquiferPath, BiomeSource biomeSource, RegistryEntry<ChunkGeneratorSettings> settings, int minimumY, Optional<Float> verticalScale, Optional<Float> horizontalScale) {
-        super(biomeSource);
+    public AtlasChunkGenerator(Registry<StructureSet> structureSetRegistry, Registry<DoublePerlinNoiseSampler.NoiseParameters> noiseRegistry, String path, BiomeSource biomeSource, RegistryEntry<ChunkGeneratorSettings> settings, int minimumY) {
+        super(structureSetRegistry, Optional.empty(), biomeSource);
         this.seaLevel = settings.value().seaLevel();
+        this.noiseRegistry = noiseRegistry;
         this.minimumY = minimumY;
         this.verticalScale = verticalScale.orElse(1f);
         if (this.verticalScale != 1) Atlas.LOGGER.warn("using non-default vertical scale for a dimension! this feature is in alpha, expect weird generation!");
@@ -88,6 +92,9 @@ public class AtlasChunkGenerator extends ChunkGenerator {
     public static final Codec<AtlasChunkGenerator> CODEC = RecordCodecBuilder.create(instance -> instance.group(
             Codec.STRING.fieldOf("height_map").forGetter(AtlasChunkGenerator::getPath),
             Codec.STRING.optionalFieldOf("aquifer").forGetter(AtlasChunkGenerator::getAquiferPath),
+            RegistryOps.createRegistryCodec(Registry.STRUCTURE_SET_KEY).forGetter(AtlasChunkGenerator::structureSetRegistry),
+            RegistryOps.createRegistryCodec(Registry.NOISE_KEY).forGetter(AtlasChunkGenerator::noiseRegistry),
+            Codec.STRING.fieldOf("path").forGetter(AtlasChunkGenerator::getPath),
             BiomeSource.CODEC.fieldOf("biome_source").forGetter(AtlasChunkGenerator::getBiomeSource),
             ChunkGeneratorSettings.REGISTRY_CODEC.fieldOf("settings").forGetter(AtlasChunkGenerator::getSettings),
             Codec.INT.fieldOf("starting_y").forGetter(AtlasChunkGenerator::getMinimumY),
@@ -98,6 +105,7 @@ public class AtlasChunkGenerator extends ChunkGenerator {
     private Optional<String> getAquiferPath() {
         return this.aquifer == null ? Optional.empty() : Optional.of(this.aquifer.getPath());
     }
+    private Registry<DoublePerlinNoiseSampler.NoiseParameters> noiseRegistry() {return this.noiseRegistry;}
 
     private int getElevation(int x, int z) {
         float xR = (x/horizontalScale);
@@ -152,6 +160,7 @@ public class AtlasChunkGenerator extends ChunkGenerator {
     public RegistryEntry<ChunkGeneratorSettings> getSettings() {return this.settings;}
 
     private String getPath() {return this.heightmap.getPath();}
+    private Registry<StructureSet> structureSetRegistry() {return this.structureSetRegistry;}
     @Override
     protected Codec<? extends ChunkGenerator> getCodec() {
         return CODEC;
@@ -173,7 +182,7 @@ public class AtlasChunkGenerator extends ChunkGenerator {
         ChunkPos chunkPos = chunk2.getPos();
         ChunkNoiseSampler chunkNoiseSampler = chunk2.getOrCreateChunkNoiseSampler(chunk -> this.createChunkNoiseSampler(chunk, structureAccessor, Blender.getBlender(chunkRegion), noiseConfig));
         AquiferSampler aquiferSampler = chunkNoiseSampler.getAquiferSampler();
-        CarverContext carverContext = new CarverContext(new NoiseChunkGenerator(this.biomeSource, this.settings)/*lmao*/, chunkRegion.getRegistryManager(), chunk2.getHeightLimitView(), chunkNoiseSampler, noiseConfig, this.settings.value().surfaceRule());
+        CarverContext carverContext = new CarverContext(new NoiseChunkGenerator(this.structureSetRegistry, this.noiseRegistry, this.biomeSource, this.settings)/*lmao*/, chunkRegion.getRegistryManager(), chunk2.getHeightLimitView(), chunkNoiseSampler, noiseConfig, this.settings.value().surfaceRule());
         CarvingMask carvingMask = ((ProtoChunk)chunk2).getOrCreateCarvingMask(carverStep);
         for (int j = -8; j <= 8; ++j) {
             for (int k = -8; k <= 8; ++k) {
@@ -200,7 +209,7 @@ public class AtlasChunkGenerator extends ChunkGenerator {
             return;
         }
         HeightContext heightContext = new HeightContext(this, region);
-        this.buildSurface(chunk, heightContext, noiseConfig, structures, region.getBiomeAccess(), region.getRegistryManager().get(RegistryKeys.BIOME), Blender.getBlender(region));
+        this.buildSurface(chunk, heightContext, noiseConfig, structures, region.getBiomeAccess(), region.getRegistryManager().get(Registry.BIOME_KEY), Blender.getBlender(region));
     }
 
     @VisibleForTesting
