@@ -10,6 +10,9 @@ to enable atlas for this dimension, give the chunk generator a `type` of `atlas:
 
 note that you'll most likely need to adjust the `starting_y` based on the heightmap. a heightmap pixel's value corresponds to its y position without being offset by `starting_y`. this means that if the heightmap's ocean pixel color is `#272727`, with each channel being decimal `39`, and the `starting_y` is `20`, then the ocean floor will begin at y `59`. the sea level begins at y `63`, which would give you four blocks of ocean in this case.
 
+## aquifers
+
+aquifers let you define the sea level at any point in the world. they work exactly the same as heightmaps. the sea level at any given coordinate is calculated as the minimum of `sea_level` and the aquifer value at that point. if you want to use an aquifer, add an `aquifer` field to your chunk generator right above `biome_source` and specify a path to the aquifer image. if you don't include this field, the generator will default to using the sea level everywhere.
 
 the `vertical_scale` and `horizontal_scale` factors scale how many blocks correspond to a pixel. a `vertical_scale` of 1 means that each of the possible 256 values in the heightmap corresponds to an elevation change of one block. a `horizontal_scale` of 2 means that each pixel on the map represents a 2x2 block area ingame. **`horizontal_scale` needs to be set for both the chunk generator and the biome source.** 
 
