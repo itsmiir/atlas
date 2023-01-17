@@ -1,0 +1,5 @@
+accessWidener v2 named
+
+extendable class net/minecraft/registry/entry/RegistryElementCodec
+
+accessible method net/minecraft/registry/entry/RegistryElementCodec <init> (Lnet/minecraft/registry/RegistryKey;Lcom/mojang/serialization/Codec;Z)V
