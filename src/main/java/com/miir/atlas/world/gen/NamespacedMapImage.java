@@ -72,7 +72,7 @@ public class NamespacedMapImage {
         if (this.image != null) {
             return image;
         }
-        Identifier id = new Identifier(path + ".png");
+        Identifier id = new Identifier(path);
         Resource imageResource = server.getResourceManager()
                 .getResource(id)
                 .orElse(null);
@@ -85,7 +85,11 @@ public class NamespacedMapImage {
     }
 
     public void initialize(String path, MinecraftServer server) throws IOException {
-        BufferedImage image = getImage(path, server);
+        try {
+            getImage(path, server);
+        } catch (IOException e) {
+            getImage(path+".png", server);
+        }
         this.width = image.getWidth();
         if (this.width % 2 != 0) width -=1;
         this.height = image.getHeight();
@@ -95,6 +99,7 @@ public class NamespacedMapImage {
             Arrays.fill(arr, EMPTY);
         }
         this.initialized = true;
+        this.populate(image);
     }
 
     private void populate(BufferedImage image) {

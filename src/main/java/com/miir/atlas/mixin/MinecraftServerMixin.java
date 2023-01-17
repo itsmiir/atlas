@@ -3,31 +3,42 @@ package com.miir.atlas.mixin;
 import com.miir.atlas.Atlas;
 import com.miir.atlas.world.gen.biome.source.AtlasBiomeSource;
 import com.miir.atlas.world.gen.chunk.AtlasChunkGenerator;
+import net.minecraft.registry.*;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.WorldGenerationProgressListener;
-import net.minecraft.server.world.ServerWorld;
+import net.minecraft.world.dimension.DimensionOptions;
+import org.spongepowered.asm.mixin.Final;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Shadow;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
+import java.util.Map;
+
 @Mixin(MinecraftServer.class)
 public abstract class MinecraftServerMixin {
-    @Shadow public abstract Iterable<ServerWorld> getWorlds();
+    @Shadow
+    @Final
+    private CombinedDynamicRegistries<ServerDynamicRegistryType> combinedDynamicRegistries;
 
-    @Inject(method = "createWorlds", at = @At("TAIL"))
+
+    @Inject(method = "createWorlds", at = @At("HEAD"))
     private void atlas_grabServer(WorldGenerationProgressListener worldGenerationProgressListener, CallbackInfo ci) {
         MinecraftServer server = (MinecraftServer) (Object) this;
         Atlas.SERVER = server;
-        for (ServerWorld world : this.getWorlds()) {
-            if (world.getChunkManager().getChunkGenerator() instanceof AtlasChunkGenerator cg) {
-                String dimensionName = world.getRegistryKey().getValue().toString();
+        Registry<DimensionOptions> registry = this.combinedDynamicRegistries.getCombinedRegistryManager().get(RegistryKeys.DIMENSION);
+        for (Map.Entry<RegistryKey<DimensionOptions>, DimensionOptions> entry : registry.getEntrySet()) {
+            if (entry.getValue().chunkGenerator().getBiomeSource() instanceof AtlasBiomeSource abs) {
                 try {
-                    cg.findMaps(server, dimensionName);
-                    if (cg.getBiomeSource() instanceof AtlasBiomeSource abs) {
-                        abs.findBiomeMap(server, dimensionName);
-                    }
+                    abs.findBiomeMap(server, entry.getKey().getValue().toString());
+                } catch (Exception e) {
+                    throw new IllegalStateException(e);
+                }
+            }
+            if (entry.getValue().chunkGenerator() instanceof AtlasChunkGenerator cg) {
+                try {
+                    cg.findMaps(server, entry.getKey().getValue().toString());
                 } catch (Exception e) {
                     throw new IllegalStateException(e);
                 }

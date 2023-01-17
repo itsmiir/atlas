@@ -69,7 +69,7 @@ public class AtlasBiomeSource extends BiomeSource {
         x += this.image.getWidth() / 2;
         z += this.image.getHeight() / 2;
         if (x < 0 || z < 0 || x >= this.image.getWidth() || z >= this.image.getHeight()) return this.defaultBiome;
-        this.image.loadPixelsInRange(x, z, false, Atlas.GEN_RADIUS);
+//        this.image.loadPixelsInRange(x, z, false, Atlas.GEN_RADIUS);
         return this.biomes.getOrDefault(this.image.getPixels()[z][x], this.defaultBiome);
     }
 }
