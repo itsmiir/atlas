@@ -5,7 +5,6 @@ import com.mojang.serialization.codecs.RecordCodecBuilder;
 import net.minecraft.registry.entry.RegistryEntry;
 import net.minecraft.util.Identifier;
 import net.minecraft.world.biome.Biome;
-import net.minecraft.world.biome.BiomeEffects;
 
 import java.util.List;
 import java.util.Optional;
@@ -49,7 +48,6 @@ public class BiomeEntry {
             throw new IllegalStateException("biome entry for color " + color + " must specify either 'biome' key or 'priority' list");
         }
         for (RegistryEntry<Biome> priorityEntry : priority.get()) {
-            System.out.println(priorityEntry);
             if (!priorityEntry.matchesId(EMPTY)) {
                 return priorityEntry;
             }
