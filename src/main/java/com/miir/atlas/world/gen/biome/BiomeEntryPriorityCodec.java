@@ -1,6 +1,5 @@
 package com.miir.atlas.world.gen.biome;
 
-import com.miir.atlas.Atlas;
 import com.miir.atlas.mixin.RegistryElementCodecAccessor;
 import com.mojang.datafixers.util.Pair;
 import com.mojang.serialization.DataResult;

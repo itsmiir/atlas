@@ -1,5 +1,6 @@
 package com.miir.atlas.world.gen.biome;
 
+import com.miir.atlas.Atlas;
 import com.mojang.serialization.Codec;
 import com.mojang.serialization.codecs.RecordCodecBuilder;
 import net.minecraft.registry.entry.RegistryEntry;
@@ -10,15 +11,7 @@ import java.util.List;
 import java.util.Optional;
 
 public class BiomeEntry {
-    /*public static final Biome EMPTY = new Biome.Builder()
-            .precipitation(Biome.Precipitation.NONE)
-            .temperature(0.5f)
-            .downfall(0.5f)
-            .effects(new BiomeEffects.Builder()
-                    .build())
-            .build();*/
-
-    public static final Identifier EMPTY = new Identifier("the_void");
+    public static final Identifier EMPTY = Atlas.id("empty");
     public static final BiomeEntryPriorityCodec PRIORITY_CODEC = new BiomeEntryPriorityCodec();
 
     private final Optional<RegistryEntry<Biome>> biome;
