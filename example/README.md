@@ -1,22 +1,26 @@
-# how to create a dimension with atlas [1.19.3] (for 1.19.2, click [here](https://github.com/itsmiir/atlas/tree/1.19.2/example/README.md))
+# how to create a dimension with atlas
 
-assuming you've [set up your datapack](https://minecraft.fandom.com/wiki/Data_pack), create a new dimension file at `namespace/dimension/<name>.json`.
+assuming you've [set up your datapack](https://minecraft.fandom.com/wiki/Data_pack), create a new dimension file at `namespace/dimension/<name>.json`. like all datapacks, you can put your file in the `minecraft` namespace and overwrite the vanilla dimensions if you want.
 
 the example datapack included here [has a dimension file example](./avila/data/avila/dimension/avila.json) that you can simply paste and tweak if you want.
 
 ## chunk generation & heightmaps
 
-to enable atlas for this dimension, give the chunk generator a `type` of `atlas:atlas`. the atlas generator requires a **heightmap**. this needs to be an 8bpc (bits-per-channel) RGBA png file; you can save to this format easily with the [GIMP image editor](https://www.gimp.org/). place this image in your datapack anywhere, though know that the convention is to place it in the `atlas/map` folder as `heightmap.png`, so `namespace/atlas/map/heightmap.png` for example. you then need to link to this image in the generator's `height_map` key. following the conventions, this would be `namespace:atlas/map/heightmap`.
+to enable atlas for this dimension, give the chunk generator a `type` of `atlas:atlas`. the atlas generator requires a **heightmap**. this needs to be a PNG file. place this image in your datapack anywhere, though know that the convention is to place it in the `atlas/map` folder as `heightmap.png`, so `<namespace>/atlas/map/heightmap.png` for example. you then need to link to this image in the generator's `height_map` key. following the conventions, this would be `namespace:atlas/map/heightmap`.
 
-note that you'll most likely need to adjust the `starting_y` based on the heightmap. a heightmap pixel's value corresponds to its y position without being offset by `starting_y`. this means that if the heightmap's ocean pixel color is `#272727`, with each channel being decimal `39`, and the `starting_y` is `20`, then the ocean floor will begin at y `59`. the sea level begins at y `63`, which would give you four blocks of ocean in this case.
+note that you'll most likely need to adjust the `starting_y` based on the heightmap. a heightmap pixel's value corresponds to its y position without being offset by `starting_y`. this means that if the heightmap's ocean pixel color is `#272727`, with each channel being decimal `39`, and the `starting_y` is `20`, then the ocean floor will begin at y `59`. assuming the sea level begins at y `63`, this would give you four blocks of ocean in this case.
 
-## aquifers
+## other paths
 
 aquifers let you define the sea level at any point in the world. they work exactly the same as heightmaps. the sea level at any given coordinate is calculated as the minimum of `sea_level` and the aquifer value at that point. if you want to use an aquifer, add an `aquifer` field to your chunk generator right above `biome_source` and specify a path to the aquifer image. if you don't include this field, the generator will default to using the sea level everywhere.
 
-the `vertical_scale` and `horizontal_scale` factors scale how many blocks correspond to a pixel. a `vertical_scale` of 1 means that each of the possible 256 values in the heightmap corresponds to an elevation change of one block. a `horizontal_scale` of 2 means that each pixel on the map represents a 2x2 block area ingame. **`horizontal_scale` needs to be set for both the chunk generator and the biome source.** 
+the `roof` and `ceiling_height` parameters let you create a roofed dimension like the nether. `roof` works like `aquifer` and `height_map`, except it's flipped upside down and placed at `ceiling_height`. for example, the nether roof's `ceiling_height` would be 128 in vanilla.
+
+
+the `vertical_scale` and `horizontal_scale` factors scale how many blocks correspond to a pixel. a `vertical_scale` of 1 means that each of the possible 256 values in the heightmap corresponds to an elevation change of one block. a `horizontal_scale` of 2 means that each pixel on the map represents a 2x2 block area ingame. **`horizontal_scale` needs to be set for both the chunk generator and the biome source.**
 
 note: these settings are still highly experimental and not recommended for use yet! for now, it's best to pre-upscale your maps before importing them
+
 
 ## biome sources & biome maps
 
