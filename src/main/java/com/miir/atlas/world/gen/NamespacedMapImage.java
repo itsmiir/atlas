@@ -1,9 +1,11 @@
 package com.miir.atlas.world.gen;
 
 import com.miir.atlas.Atlas;
+import com.miir.atlas.world.gen.chunk.AtlasChunkGenerator;
 import net.minecraft.resource.Resource;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.util.Identifier;
+import net.minecraft.util.math.MathHelper;
 import org.jetbrains.annotations.Nullable;
 
 import javax.imageio.ImageIO;
@@ -18,9 +20,8 @@ public class NamespacedMapImage {
     private boolean initialized = false;
 
     public enum Type {
-        HEIGHTMAP,
-        BIOMES,
-        AQUIFER
+        GRAYSCALE,
+        COLOR
     }
 
     private final String path;
@@ -40,6 +41,7 @@ public class NamespacedMapImage {
         if (!this.initialized) {
             throw new IllegalStateException("tried to read from an uninitialized atlas!");
         }
+        // todo: BufferedImage::getSubImage may be better for on-demand loading optimization
         return this.getOrDownloadPixels(
                 Math.max(0, x-radius),
                 Math.max(0, z-radius),
@@ -69,6 +71,14 @@ public class NamespacedMapImage {
     }
 
     private BufferedImage getImage(String path, MinecraftServer server) throws IOException {
+        try {
+            return this.findImage(path, server);
+        } catch (IOException ioe) {
+            return this.findImage(path + ".png", server);
+        }
+    }
+
+    private BufferedImage findImage(String path, MinecraftServer server) throws IOException {
         if (this.image != null) {
             return image;
         }
@@ -76,9 +86,9 @@ public class NamespacedMapImage {
         Resource imageResource = server.getResourceManager()
                 .getResource(id)
                 .orElse(null);
-        if (imageResource == null) {
-            throw new IOException("could not find " + id);
-        }
+            if (imageResource == null) {
+                throw new IOException("could not find " + id);
+            }
         BufferedImage i = ImageIO.read(imageResource.getInputStream());
         this.image = i;
         return i;
@@ -104,8 +114,8 @@ public class NamespacedMapImage {
 
     private void populate(BufferedImage image) {
         switch (this.type) {
-            case HEIGHTMAP, AQUIFER -> populateGrayscale(image);
-            case BIOMES -> populateColor(image);
+            case GRAYSCALE -> populateGrayscale(image);
+            case COLOR   -> populateColor(image);
         }
     }
 
@@ -149,6 +159,18 @@ public class NamespacedMapImage {
             }
             this.pixels[y][x++] = datum & 0xFFFFFF;
         }
+    }
+
+    public float lerp(int truncatedX, float xR, int truncatedZ, float zR) {
+        int dx = 0, dz = 0;
+        int u0 = Math.max(0, truncatedX + dx), v0 = Math.max(0, truncatedZ + dz);
+        int u1 = Math.min(getWidth()-1, u0 + 1),    v1 = Math.min(v0 + 1, getHeight()-1);
+        float i00, i01, i10, i11;
+        i00 = getPixels()[v0][u0];
+        i01 = getPixels()[v1][u0];
+        i10 = getPixels()[v0][u1];
+        i11 = getPixels()[v1][u1];
+        return (float) MathHelper.lerp2(Math.abs(xR), Math.abs(zR), i00, i10, i01, i11);
     }
 
     public String getPath() {

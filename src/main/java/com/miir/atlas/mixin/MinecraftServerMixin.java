@@ -40,7 +40,7 @@ public abstract class MinecraftServerMixin {
                 try {
                     cg.findMaps(server, entry.getKey().getValue().toString());
                 } catch (Exception e) {
-                    throw new IllegalStateException(e);
+                    throw new IllegalStateException("error initializing: could not find maps for dimension "+entry.getKey().getValue().toString());
                 }
             }
         }

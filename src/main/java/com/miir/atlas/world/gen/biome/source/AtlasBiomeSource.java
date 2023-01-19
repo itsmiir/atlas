@@ -25,7 +25,7 @@ public class AtlasBiomeSource extends BiomeSource {
 
     protected AtlasBiomeSource(String path, List<BiomeEntry> biomes, RegistryEntry<Biome> defaultBiome, float horizontalScale) {
         super(biomes.stream().map(BiomeEntry::getTopBiome).toList());
-        this.image = new NamespacedMapImage(path, NamespacedMapImage.Type.BIOMES);
+        this.image = new NamespacedMapImage(path, NamespacedMapImage.Type.COLOR);
         this.biomeEntries = biomes;
         this.defaultBiome = defaultBiome;
         this.horizontalScale = horizontalScale;
