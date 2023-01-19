@@ -94,11 +94,11 @@ public class NamespacedMapImage {
         return i;
     }
 
-    public void initialize(String path, MinecraftServer server) throws IOException {
+    public void initialize(MinecraftServer server) throws IOException {
         try {
-            getImage(path, server);
+            getImage(this.path, server);
         } catch (IOException e) {
-            getImage(path+".png", server);
+            getImage(this.path+".png", server);
         }
         this.width = image.getWidth();
         if (this.width % 2 != 0) width -=1;
