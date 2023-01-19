@@ -57,7 +57,7 @@ public class AtlasBiomeSource extends BiomeSource {
     }
 
     public void findBiomeMap(MinecraftServer server, String levelName) throws IOException {
-        this.image.initialize(getPath(), server);
+        this.image.initialize(server);
         Atlas.LOGGER.info("found biomes for dimension " + levelName + " in a " + this.image.getWidth() + "x" + this.image.getHeight() + " map: " + getPath());
     }
 
