@@ -15,6 +15,7 @@ import net.minecraft.world.biome.source.util.MultiNoiseUtil;
 
 import java.io.IOException;
 import java.util.List;
+import java.util.Optional;
 
 public class AtlasBiomeSource extends BiomeSource {
     private final NamespacedMapImage image;
@@ -23,11 +24,11 @@ public class AtlasBiomeSource extends BiomeSource {
     private final Int2ObjectArrayMap<RegistryEntry<Biome>> biomes = new Int2ObjectArrayMap<>();
     private final float horizontalScale;
 
-    protected AtlasBiomeSource(String path, List<BiomeEntry> biomes, RegistryEntry<Biome> defaultBiome, float horizontalScale) {
+    protected AtlasBiomeSource(String path, List<BiomeEntry> biomes, Optional<RegistryEntry<Biome>> defaultBiome, float horizontalScale) {
         super(biomes.stream().map(BiomeEntry::getTopBiome).toList());
         this.image = new NamespacedMapImage(path, NamespacedMapImage.Type.COLOR);
         this.biomeEntries = biomes;
-        this.defaultBiome = defaultBiome == null ? this.biomeEntries.get(0).getTopBiome() : defaultBiome;
+        this.defaultBiome = defaultBiome.orElse(this.biomeEntries.get(0).getTopBiome());
         this.horizontalScale = horizontalScale;
         for (BiomeEntry entry : this.biomeEntries) {
             this.biomes.put(entry.getColor(), entry.getTopBiome());
@@ -37,14 +38,14 @@ public class AtlasBiomeSource extends BiomeSource {
     public static final Codec<AtlasBiomeSource> CODEC = RecordCodecBuilder.create(instance -> instance.group(
             Codec.STRING.fieldOf("biome_map").forGetter(AtlasBiomeSource::getPath),
             Codecs.nonEmptyList(BiomeEntry.CODEC.listOf()).fieldOf("biomes").forGetter(AtlasBiomeSource::getBiomeEntries),
-            Biome.REGISTRY_CODEC.optionalFieldOf("default", null).forGetter(AtlasBiomeSource::getDefaultBiome),
+            Biome.REGISTRY_CODEC.optionalFieldOf("default").forGetter(AtlasBiomeSource::getDefaultBiome),
             Codec.FLOAT.fieldOf("horizontal_scale").forGetter(AtlasBiomeSource::getHorizontalScale)
     ).apply(instance, AtlasBiomeSource::new));
 
     public List<BiomeEntry> getBiomeEntries() {
         return this.biomeEntries;
     }
-    public RegistryEntry<Biome> getDefaultBiome(){return this.defaultBiome;}
+    public Optional<RegistryEntry<Biome>> getDefaultBiome(){return Optional.of(this.defaultBiome);}
     public String getPath() {
         return this.image.getPath();
     }
