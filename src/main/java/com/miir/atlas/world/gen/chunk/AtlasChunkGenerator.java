@@ -3,6 +3,7 @@ package com.miir.atlas.world.gen.chunk;
 import com.google.common.annotations.VisibleForTesting;
 import com.miir.atlas.Atlas;
 import com.miir.atlas.world.gen.NamespacedMapImage;
+import com.miir.atlas.world.gen.cave.CaveLayerEntry;
 import com.mojang.serialization.Codec;
 import com.mojang.serialization.codecs.RecordCodecBuilder;
 import net.minecraft.SharedConstants;
@@ -13,6 +14,7 @@ import net.minecraft.registry.RegistryKeys;
 import net.minecraft.registry.entry.RegistryEntry;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.util.Util;
+import net.minecraft.util.dynamic.Codecs;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.ChunkPos;
 import net.minecraft.util.math.MathHelper;
@@ -42,8 +44,10 @@ import net.minecraft.world.gen.chunk.*;
 import net.minecraft.world.gen.noise.NoiseConfig;
 
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
+import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.Executor;
 import java.util.stream.Stream;
@@ -58,13 +62,15 @@ public class AtlasChunkGenerator extends ChunkGenerator {
     private final RegistryEntry<ChunkGeneratorSettings> settings;
     private final float verticalScale;
     private final float horizontalScale;
+    private final ArrayList<CaveLayerEntry> caveLayers = new ArrayList<>();
 
 
     public AtlasChunkGenerator(
             String heightmapPath, String aquiferPath, String roofPath,
             BiomeSource biomeSource, RegistryEntry<ChunkGeneratorSettings> settings,
             int startingY, int ceilingHeight,
-            float verticalScale, float horizontalScale
+            float verticalScale, float horizontalScale,
+            List<CaveLayerEntry> caveLayers
     ) {
         super(biomeSource);
         this.seaLevel = settings.value().seaLevel();
@@ -74,23 +80,37 @@ public class AtlasChunkGenerator extends ChunkGenerator {
         if (this.verticalScale != 1) Atlas.LOGGER.warn("using non-default vertical scale for a dimension! this feature is in alpha, expect weird generation!");
         this.horizontalScale = horizontalScale;
         this.heightmap = new NamespacedMapImage(heightmapPath, NamespacedMapImage.Type.GRAYSCALE);
+        this.caveLayers.addAll(caveLayers);
         this.aquifer = !aquiferPath.equals("") ? new NamespacedMapImage(aquiferPath, NamespacedMapImage.Type.GRAYSCALE) :null;
         this.roof = !roofPath.equals("") ? new NamespacedMapImage(roofPath, NamespacedMapImage.Type.GRAYSCALE) : null;
         this.settings = settings;
     }
 
     public void findMaps(MinecraftServer server, String levelName) throws IOException {
-        this.heightmap.initialize(this.getPath(), server);
+        this.heightmap.initialize(server);
         Atlas.LOGGER.info("found elevation data for dimension " + levelName + " in a " + this.heightmap.getWidth() + "x" + this.heightmap.getHeight() + " map: " + getPath());
         if (!this.getAquiferPath().equals("")) {
-            this.aquifer.initialize(this.getAquiferPath(), server);
+            this.aquifer.initialize(server);
             Atlas.LOGGER.info("found aquifer data for dimension " + levelName + " in a " + this.aquifer.getWidth() + "x" + this.aquifer.getHeight() + " map: " + getAquiferPath());
         } else {
             Atlas.LOGGER.warn("couldn't find aquifer for dimension " + levelName + ", defaulting to sea level!");
         }
         if (!Objects.equals(this.getRoofPath(), "")) {
-            this.roof.initialize(this.getRoofPath(), server);
+            this.roof.initialize(server);
             Atlas.LOGGER.info("found roof data for dimension " + levelName + " in a " + this.roof.getWidth() + "x" + this.roof.getHeight() + " map: " + getRoofPath());
+        }
+        if (this.caveLayers.size() > 0) {
+            for (CaveLayerEntry layer :
+                    this.caveLayers) {
+                layer.getCeiling().initialize(server);
+                layer.getFloor().initialize(server);
+                if (layer.getBiomes() != null) {
+                    layer.getBiomes().initialize(server);
+                }
+                if (layer.getAquifer() != null) {
+                    layer.getAquifer().initialize(server);
+                }
+            }
         }
     }
 
@@ -103,8 +123,13 @@ public class AtlasChunkGenerator extends ChunkGenerator {
             Codec.INT.fieldOf("starting_y").forGetter(AtlasChunkGenerator::getMinimumY),
             Codec.INT.optionalFieldOf("ceiling_height", Integer.MIN_VALUE).forGetter(AtlasChunkGenerator::getCeilingHeight),
             Codec.FLOAT.optionalFieldOf("vertical_scale", 1f).forGetter(AtlasChunkGenerator::getVerticalScale),
-            Codec.FLOAT.optionalFieldOf("horizontal_scale", 1f).forGetter(AtlasChunkGenerator::getHorizontalScale)
+            Codec.FLOAT.optionalFieldOf("horizontal_scale", 1f).forGetter(AtlasChunkGenerator::getHorizontalScale),
+            Codecs.nonEmptyList(CaveLayerEntry.CODEC.listOf()).optionalFieldOf("caves", new ArrayList<>()).forGetter(AtlasChunkGenerator::getCaveLayers)
     ).apply(instance, AtlasChunkGenerator::new));
+
+    private List<CaveLayerEntry> getCaveLayers() {
+        return this.caveLayers;
+    }
 
     private int getCeilingHeight() {return this.ceilingHeight;}
 
@@ -274,7 +299,10 @@ public class AtlasChunkGenerator extends ChunkGenerator {
         return this.seaLevel;
     }
     public int getSeaLevel(int x, int z) {
-        return (int) Math.min(Math.max(this.getFromMap(x, z, this.aquifer), this.seaLevel), this.minimumY+this.getWorldHeight());
+        if (this.aquifer != null) {
+            return (int) Math.min(Math.max(this.getFromMap(x, z, this.aquifer), this.seaLevel), this.minimumY+this.getWorldHeight());
+        }
+        return seaLevel;
     }
 
     @Override
