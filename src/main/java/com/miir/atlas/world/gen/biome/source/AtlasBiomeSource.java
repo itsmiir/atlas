@@ -27,7 +27,7 @@ public class AtlasBiomeSource extends BiomeSource {
         super(biomes.stream().map(BiomeEntry::getTopBiome).toList());
         this.image = new NamespacedMapImage(path, NamespacedMapImage.Type.COLOR);
         this.biomeEntries = biomes;
-        this.defaultBiome = defaultBiome;
+        this.defaultBiome = defaultBiome == null ? this.biomeEntries.get(0).getTopBiome() : defaultBiome;
         this.horizontalScale = horizontalScale;
         for (BiomeEntry entry : this.biomeEntries) {
             this.biomes.put(entry.getColor(), entry.getTopBiome());
@@ -37,7 +37,7 @@ public class AtlasBiomeSource extends BiomeSource {
     public static final Codec<AtlasBiomeSource> CODEC = RecordCodecBuilder.create(instance -> instance.group(
             Codec.STRING.fieldOf("biome_map").forGetter(AtlasBiomeSource::getPath),
             Codecs.nonEmptyList(BiomeEntry.CODEC.listOf()).fieldOf("biomes").forGetter(AtlasBiomeSource::getBiomeEntries),
-            Biome.REGISTRY_CODEC.fieldOf("default").forGetter(AtlasBiomeSource::getDefaultBiome),
+            Biome.REGISTRY_CODEC.optionalFieldOf("default", null).forGetter(AtlasBiomeSource::getDefaultBiome),
             Codec.FLOAT.fieldOf("horizontal_scale").forGetter(AtlasBiomeSource::getHorizontalScale)
     ).apply(instance, AtlasBiomeSource::new));
 
