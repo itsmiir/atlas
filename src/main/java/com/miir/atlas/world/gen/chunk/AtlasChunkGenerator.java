@@ -18,6 +18,7 @@ import net.minecraft.util.dynamic.Codecs;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.ChunkPos;
 import net.minecraft.util.math.MathHelper;
+import net.minecraft.util.math.noise.DoublePerlinNoiseSampler;
 import net.minecraft.util.math.random.CheckedRandom;
 import net.minecraft.util.math.random.ChunkRandom;
 import net.minecraft.util.math.random.RandomSeed;
@@ -31,6 +32,7 @@ import net.minecraft.world.biome.source.BiomeAccess;
 import net.minecraft.world.biome.source.BiomeCoords;
 import net.minecraft.world.biome.source.BiomeSource;
 import net.minecraft.world.chunk.Chunk;
+import net.minecraft.world.chunk.ChunkSection;
 import net.minecraft.world.chunk.ProtoChunk;
 import net.minecraft.world.dimension.DimensionType;
 import net.minecraft.world.gen.GenerationStep;
@@ -47,12 +49,12 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
-import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.Executor;
 import java.util.stream.Stream;
 
 public class AtlasChunkGenerator extends ChunkGenerator {
+    private static final BlockState AIR = Blocks.AIR.getDefaultState();
     private final NamespacedMapImage heightmap;
     private final NamespacedMapImage aquifer;
     private final NamespacedMapImage roof;
@@ -63,6 +65,10 @@ public class AtlasChunkGenerator extends ChunkGenerator {
     private final float verticalScale;
     private final float horizontalScale;
     private final ArrayList<CaveLayerEntry> caveLayers = new ArrayList<>();
+
+
+//    private final DoublePerlinNoiseSampler caveLayerNoise;
+
 
 
     public AtlasChunkGenerator(
@@ -167,19 +173,20 @@ public class AtlasChunkGenerator extends ChunkGenerator {
 
     @Override
     @SuppressWarnings("deprecation")
-    public void carve(ChunkRegion chunkRegion, long seed, NoiseConfig noiseConfig, BiomeAccess biomeAccess, StructureAccessor structureAccessor, Chunk chunk2, GenerationStep.Carver carverStep) {
+    public void carve(ChunkRegion chunkRegion, long seed, NoiseConfig noiseConfig, BiomeAccess biomeAccess, StructureAccessor structureAccessor, Chunk chunk, GenerationStep.Carver carverStep) {
         BiomeAccess biomeAccess2 = biomeAccess.withSource((biomeX, biomeY, biomeZ) -> this.biomeSource.getBiome(biomeX, biomeY, biomeZ, noiseConfig.getMultiNoiseSampler()));
         ChunkRandom chunkRandom = new ChunkRandom(new CheckedRandom(RandomSeed.getSeed()));
         int i = 8;
-        ChunkPos chunkPos = chunk2.getPos();
-        ChunkNoiseSampler chunkNoiseSampler = chunk2.getOrCreateChunkNoiseSampler(chunk -> this.createChunkNoiseSampler(chunk, structureAccessor, Blender.getBlender(chunkRegion), noiseConfig));
+        ChunkPos chunkPos = chunk.getPos();
+        ChunkNoiseSampler chunkNoiseSampler = chunk.getOrCreateChunkNoiseSampler(chunk2 -> this.createChunkNoiseSampler(chunk2, structureAccessor, Blender.getBlender(chunkRegion), noiseConfig));
         AquiferSampler aquiferSampler = chunkNoiseSampler.getAquiferSampler();
-        CarverContext carverContext = new CarverContext(new NoiseChunkGenerator(this.biomeSource, this.settings)/*lmao*/, chunkRegion.getRegistryManager(), chunk2.getHeightLimitView(), chunkNoiseSampler, noiseConfig, this.settings.value().surfaceRule());
-        CarvingMask carvingMask = ((ProtoChunk)chunk2).getOrCreateCarvingMask(carverStep);
+        CarverContext carverContext = new CarverContext(new NoiseChunkGenerator(this.biomeSource, this.settings)/*lmao*/, chunkRegion.getRegistryManager(), chunk.getHeightLimitView(), chunkNoiseSampler, noiseConfig, this.settings.value().surfaceRule());
+        CarvingMask carvingMask = ((ProtoChunk)chunk).getOrCreateCarvingMask(carverStep);
         for (int j = -i; j <= i; ++j) {
             for (int k = -i; k <= i; ++k) {
                 ChunkPos chunkPos2 = new ChunkPos(chunkPos.x + j, chunkPos.z + k);
                 Chunk chunk22 = chunkRegion.getChunk(chunkPos2.x, chunkPos2.z);
+                // hope this is multithreaded x
                 GenerationSettings generationSettings = chunk22.getOrCreateGenerationSettings(() -> this.getGenerationSettings(this.biomeSource.getBiome(BiomeCoords.fromBlock(chunkPos2.getStartX()), 0, BiomeCoords.fromBlock(chunkPos2.getStartZ()), noiseConfig.getMultiNoiseSampler())));
                 Iterable<RegistryEntry<ConfiguredCarver<?>>> iterable = generationSettings.getCarversForStep(carverStep);
                 int l = 0;
@@ -187,12 +194,136 @@ public class AtlasChunkGenerator extends ChunkGenerator {
                     ConfiguredCarver<?> configuredCarver = registryEntry.value();
                     chunkRandom.setCarverSeed(seed + (long)l, chunkPos2.x, chunkPos2.z);
                     if (configuredCarver.shouldCarve(chunkRandom)) {
-                        configuredCarver.carve(carverContext, chunk2, biomeAccess2::getBiome, chunkRandom, aquiferSampler, chunkPos2, carvingMask);
+                        configuredCarver.carve(carverContext, chunk, biomeAccess2::getBiome, chunkRandom, aquiferSampler, chunkPos2, carvingMask);
                     }
                     ++l;
                 }
             }
         }
+    }
+
+    private void carveNoiseCaves(Chunk chunk, ChunkNoiseSampler chunkNoiseSampler) {
+//        ChunkNoiseSampler chunkNoiseSampler = createChunkNoiseSampler(chunk, structureAccessor, blender, noiseConfig);
+        GenerationShapeConfig config = this.settings.value().generationShapeConfig();
+        ChunkPos chunkPos = chunk.getPos();
+        int startX = chunkPos.getStartX();
+        int startZ = chunkPos.getStartZ();
+        int verticalBlockSize = config.verticalBlockSize();
+        int horizontalBlockSize = config.horizontalBlockSize();
+        int minimumCellY = MathHelper.floorDiv(this.getMinimumY(), verticalBlockSize);
+        int cellHeight = MathHelper.floorDiv(config.height(), verticalBlockSize);
+        if (cellHeight <= 0) return;
+        AquiferSampler aquiferSampler = chunkNoiseSampler.getAquiferSampler();
+        chunkNoiseSampler.sampleStartNoise();
+        BlockPos.Mutable mutable = new BlockPos.Mutable();
+        int horizontalBlocksPerChunk = 16 / horizontalBlockSize;
+        int horizontalBPC2 = 16 / horizontalBlockSize;
+        for (int horizontalBlock = 0; horizontalBlock < horizontalBlocksPerChunk; ++horizontalBlock) {
+            chunkNoiseSampler.sampleEndNoise(horizontalBlock);
+            for (int verticalBlock = 0; verticalBlock < horizontalBPC2; ++verticalBlock) {
+                ChunkSection chunkSection = chunk.getSection(chunk.countVerticalSections() - 1);
+                for (int verticalCell = cellHeight - 1; verticalCell >= 0; --verticalCell) {
+                    chunkNoiseSampler.sampleNoiseCorners(verticalCell, verticalBlock);
+                    for (int blockY = verticalBlockSize - 1; blockY >= 0; --blockY) {
+                        int absoluteY = (minimumCellY + verticalCell) * verticalBlockSize + blockY;
+                        int chunkY = absoluteY & 0xF;
+                        int sectionIndex = chunk.getSectionIndex(absoluteY);
+                        if (chunk.getSectionIndex(chunkSection.getYOffset()) != sectionIndex) {
+                            chunkSection = chunk.getSection(sectionIndex);
+                        }
+                        double yBlockDelta = (double) blockY / (double) verticalBlockSize;
+                        chunkNoiseSampler.sampleNoiseY(absoluteY, yBlockDelta);
+                        for (int blockX = 0; blockX < horizontalBlockSize; ++blockX) {
+                            int absoluteX = startX + horizontalBlock * horizontalBlockSize + blockX;
+                            int chunkX = absoluteX & 0xF;
+                            double xBlockDelta = (double) blockX / (double) horizontalBlockSize;
+                            chunkNoiseSampler.sampleNoiseX(absoluteX, xBlockDelta);
+                            for (int blockZ = 0; blockZ < horizontalBlockSize; ++blockZ) {
+                                int absoluteZ = startZ + verticalBlock * horizontalBlockSize + blockZ;
+                                int chunkZ = absoluteZ & 0xF;
+                                double zBlockDelta = (double) blockZ / (double) horizontalBlockSize;
+                                chunkNoiseSampler.sampleNoiseZ(absoluteZ, zBlockDelta);
+                                BlockState blockState = chunkNoiseSampler.sampleBlockState();
+                                if (blockState == null) blockState = this.settings.value().defaultBlock();
+                                chunkSection.setBlockState(chunkX, chunkY, chunkZ, blockState, false);
+                                if (!aquiferSampler.needsFluidTick() || blockState.getFluidState().isEmpty()) continue;
+                                mutable.set(absoluteX, absoluteY, absoluteZ);
+                                chunk.markBlockForPostProcessing(mutable);
+                            }
+                        }
+                    }
+                }
+            }
+            chunkNoiseSampler.swapBuffers();
+        }
+        chunkNoiseSampler.stopInterpolation();
+//        ChunkNoiseSampler chunkNoiseSampler = chunk.getOrCreateChunkNoiseSampler(chunk2 -> this.createChunkNoiseSampler(chunk, structureAccessor, blender, noiseConfig));
+//        Heightmap heightmap = chunk.getHeightmap(Heightmap.Type.OCEAN_FLOOR_WG);
+//        Heightmap heightmap2 = chunk.getHeightmap(Heightmap.Type.WORLD_SURFACE_WG);
+//        ChunkPos chunkPos = chunk.getPos();
+//        GenerationShapeConfig config = this.settings.value().generationShapeConfig();
+//        int i = chunkPos.getStartX();
+//        int j = chunkPos.getStartZ();
+//        int minimumCellY = MathHelper.floorDiv(this.getMinimumY(), this.settings.value().generationShapeConfig().verticalBlockSize());
+//        int cellHeight = MathHelper.floorDiv(config.height(), config.verticalBlockSize());
+//        if (cellHeight <= 0) {
+//            return;
+//        }
+//        AquiferSampler aquiferSampler = chunkNoiseSampler.getAquiferSampler();
+//        chunkNoiseSampler.sampleStartNoise();
+//        BlockPos.Mutable mutable = new BlockPos.Mutable();
+//        int k = config.horizontalBlockSize();
+//        int l = config.verticalBlockSize();
+//        int m = 16 / k;
+//        int n = 16 / k;
+//        for (int o = 0; o < m; ++o) {
+//            chunkNoiseSampler.sampleEndNoise(o);
+//            for (int p = 0; p < n; ++p) {
+//                ChunkSection chunkSection = chunk.getSection(chunk.countVerticalSections() - 1);
+//                for (int q = cellHeight - 1; q >= 0; --q) {
+//                    chunkNoiseSampler.sampleNoiseCorners(q, p);
+//                    for (int r = l - 1; r >= 0; --r) {
+//                        int s = (minimumCellY + q) * l + r;
+//                        int t = s & 0xF;
+//                        int u = chunk.getSectionIndex(s);
+//                        if (chunk.getSectionIndex(chunkSection.getYOffset()) != u) {
+//                            chunkSection = chunk.getSection(u);
+//                        }
+//                        double d = (double)r / (double)l;
+//                        chunkNoiseSampler.sampleNoiseY(s, d);
+//                        for (int v = 0; v < k; ++v) {
+//                            int w = i + o * k + v;
+//                            int x = w & 0xF;
+//                            double e = (double)v / (double)k;
+//                            chunkNoiseSampler.sampleNoiseX(w, e);
+//                            for (int y = 0; y < k; ++y) {
+//                                int z = j + p * k + y;
+//                                int aa = z & 0xF;
+//                                double f = (double)y / (double)k;
+//                                chunkNoiseSampler.sampleNoiseZ(z, f);
+//                                BlockState blockState = chunkNoiseSampler.sampleBlockState();
+//                                if (blockState == null) {
+//                                    blockState = this.settings.value().defaultBlock();
+//                                }
+//                                if ((blockState = this.getBlockState(chunkNoiseSampler, w, s, z, blockState)) == AIR || SharedConstants.isOutsideGenerationArea(chunk.getPos())) continue;
+//                                if (blockState.getLuminance() != 0 && chunk instanceof ProtoChunk) {
+//                                    mutable.set(w, s, z);
+//                                    ((ProtoChunk)chunk).addLightSource(mutable);
+//                                }
+//                                chunkSection.setBlockState(x, t, aa, blockState, false);
+//                                heightmap.trackUpdate(x, s, aa, blockState);
+//                                heightmap2.trackUpdate(x, s, aa, blockState);
+//                                if (!aquiferSampler.needsFluidTick() || blockState.getFluidState().isEmpty()) continue;
+//                                mutable.set(w, s, z);
+//                                chunk.markBlockForPostProcessing(mutable);
+//                            }
+//                        }
+//                    }
+//                }
+//            }
+//            chunkNoiseSampler.swapBuffers();
+//        }
+//        chunkNoiseSampler.stopInterpolation();
     }
 
     @Override
@@ -243,9 +374,10 @@ public class AtlasChunkGenerator extends ChunkGenerator {
         if (truncatedX < 0 || truncatedZ < 0 || truncatedX >= this.heightmap.getWidth() || truncatedZ >= this.heightmap.getHeight()) return CompletableFuture.completedFuture(chunk);
         this.heightmap.loadPixelsInRange(truncatedX, truncatedZ, true, Atlas.GEN_RADIUS);
         if (this.aquifer != null) this.aquifer.loadPixelsInRange(truncatedX, truncatedZ, true, Atlas.GEN_RADIUS);
-        return CompletableFuture.supplyAsync(Util.debugSupplier("wgen_fill_noise", () -> this.populateNoise(chunk)), Util.getMainWorkerExecutor());
+        ChunkNoiseSampler chunkNoiseSampler = createChunkNoiseSampler(chunk, structureAccessor, blender, noiseConfig);
+        return CompletableFuture.supplyAsync(Util.debugSupplier("wgen_fill_noise", () -> this.populateNoise(chunk, chunkNoiseSampler)), Util.getMainWorkerExecutor());
     }
-    private Chunk populateNoise(Chunk chunk) {
+    private Chunk populateNoise(Chunk chunk, ChunkNoiseSampler sampler) {
         int minY = settings.value().generationShapeConfig().minimumY();
         Heightmap oceanHeightmap = chunk.getHeightmap(Heightmap.Type.OCEAN_FLOOR_WG);
         Heightmap surfaceHeightmap = chunk.getHeightmap(Heightmap.Type.WORLD_SURFACE_WG);
@@ -291,6 +423,7 @@ public class AtlasChunkGenerator extends ChunkGenerator {
                 }
             }
         }
+//        this.carveNoiseCaves(chunk, sampler);
         return chunk;
     }
 
@@ -360,5 +493,30 @@ public class AtlasChunkGenerator extends ChunkGenerator {
         };
     }
 
-
+    private void generateCaves(Chunk chunk, AquiferSampler.FluidLevelSampler fls) {
+        for (CaveLayerEntry entry : this.caveLayers) {
+            BlockPos.Mutable mutable = new BlockPos.Mutable();
+            int scale = entry.verticalScale(); // todo implement
+            int minX = chunk.getPos().x << 4;
+            int minZ = chunk.getPos().z << 4;
+            for (int x = minX; x < 16+minX; x++) {
+                mutable.setX(x);
+                for (int z = minZ; z < 16+minZ; z++) {
+                    mutable.setZ(z);
+                    int maxY = (int) (entry.ceilingHeight() - this.getCaveFromMap(x, z, entry.getCeiling()));
+                    int minY = (int) (entry.floorHeight() + this.getCaveFromMap(x, z, entry.getFloor()));
+                    if (maxY > minY) {
+                        for (int y = maxY; y > minY; y--) {
+                            AquiferSampler.FluidLevel fluidLevel = fls.getFluidLevel(x, y, z);
+                            mutable.setY(y);
+                            chunk.setBlockState(mutable, fluidLevel.getBlockState(y), false);
+                        }
+                    }
+                }
+            }
+        }
+    }
+    private double getCaveFromMap(int x, int z, NamespacedMapImage nmi) {
+        return (this.getFromMap(x, z, nmi) - this.minimumY)/this.verticalScale;
+    }
 }

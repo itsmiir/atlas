@@ -1,5 +1,6 @@
 accessWidener v2 named
 
-extendable class net/minecraft/registry/entry/RegistryElementCodec
-
-accessible method net/minecraft/registry/entry/RegistryElementCodec <init> (Lnet/minecraft/registry/RegistryKey;Lcom/mojang/serialization/Codec;Z)V
+extendable    class     net/minecraft/registry/entry/RegistryElementCodec
+accessible    method    net/minecraft/registry/entry/RegistryElementCodec  <init>              (Lnet/minecraft/registry/RegistryKey;Lcom/mojang/serialization/Codec;Z)V
+accessible    method    net/minecraft/world/gen/chunk/ChunkNoiseSampler    sampleBlockState    ()Lnet/minecraft/block/BlockState;
+accessible    method    net/minecraft/util/math/noise/DoublePerlinNoiseSampler    <init>    (Lnet/minecraft/util/math/random/Random;Lnet/minecraft/util/math/noise/DoublePerlinNoiseSampler$NoiseParameters;Z)V

@@ -7,6 +7,7 @@ import net.minecraft.server.MinecraftServer;
 import net.minecraft.util.Identifier;
 import net.minecraft.util.math.MathHelper;
 import org.jetbrains.annotations.Nullable;
+import org.spongepowered.asm.mixin.injection.At;
 
 import javax.imageio.ImageIO;
 import java.awt.image.BufferedImage;
@@ -17,23 +18,27 @@ import java.util.Arrays;
 public class NamespacedMapImage {
 
     private static final int EMPTY = -2;
-    private boolean initialized = false;
 
-    public enum Type {
-        GRAYSCALE,
-        COLOR
-    }
-
-    private final String path;
-    private final Type type;
+    private String path;
+    private Type type;
     private BufferedImage image;
     private int width;
     private int height;
     private int[][] pixels;
+    private boolean initialized = false;
 
     public NamespacedMapImage(String path, Type type) {
         this.path = path;
         this.type = type;
+    }
+    public NamespacedMapImage(NamespacedMapImage other) {
+        this.path = other.path;
+        this.type = other.type;
+        this.height = other.height;
+        this.width = other.width;
+        this.image = other.image;
+        this.pixels = other.pixels;
+        this.initialized = other.initialized;
     }
 
     public int[][] loadPixelsInRange(int x, int z, boolean grayscale, int radius) {
@@ -95,21 +100,26 @@ public class NamespacedMapImage {
     }
 
     public void initialize(MinecraftServer server) throws IOException {
-        try {
-            getImage(this.path, server);
-        } catch (IOException e) {
-            getImage(this.path+".png", server);
-        }
-        this.width = image.getWidth();
-        if (this.width % 2 != 0) width -=1;
-        this.height = image.getHeight();
-        if (this.height % 2 != 0) height -=1;
-        this.pixels = new int[height][width];
-        for (int[] arr : this.pixels) {
-            Arrays.fill(arr, EMPTY);
+        if (Atlas.MAPS.containsKey(this.path)) {
+            this.pixels = Atlas.MAPS.get(this.path).getPixels();
+        } else {
+            try {
+                getImage(this.path, server);
+            } catch (IOException e) {
+                getImage(this.path+".png", server);
+            }
+            this.width = image.getWidth();
+            if (this.width % 2 != 0) width -=1;
+            this.height = image.getHeight();
+            if (this.height % 2 != 0) height -=1;
+            this.pixels = new int[height][width];
+            for (int[] arr : this.pixels) {
+                Arrays.fill(arr, EMPTY);
+            }
+            this.populate(image);
         }
         this.initialized = true;
-        this.populate(image);
+        Atlas.MAPS.put(this.path, this);
     }
 
     private void populate(BufferedImage image) {
@@ -187,5 +197,36 @@ public class NamespacedMapImage {
 
     public int[][] getPixels() {
         return pixels;
+    }
+
+
+    public double transformToNoise(double x, double y, double z) {
+        int elevation;
+        try {
+            elevation = this.getPixels()[(int) z][(int) x];
+        } catch (ArrayIndexOutOfBoundsException e) {
+            elevation = 0;
+        }
+        if (y <= elevation) return 1;
+        return -1;
+    }
+    public NamespacedMapImage copy(NamespacedMapImage other) {
+        this.path = other.path;
+        this.type = other.type;
+        this.height = other.height;
+        this.width = other.width;
+        this.image = other.image;
+        this.pixels = other.pixels;
+        this.initialized = other.initialized;
+        return this;
+    }
+
+    public boolean isInitialized() {
+        return this.initialized;
+    }
+
+    public enum Type {
+        GRAYSCALE,
+        COLOR
     }
 }

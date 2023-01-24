@@ -43,12 +43,12 @@ public class CaveLayerEntry {
             ).apply(instance, CaveLayerEntry::new));
 
     private String getName() {return this.name;}
-    private int verticalScale() {return this.verticalScale;}
     private String biomePath() {return this.biomePath;}
     private String floorPath() {return this.floorPath;}
     private String ceilingPath() {return this.ceilingPath;}
 
     public int floorHeight() {return this.floorHeight;}
+    public int verticalScale() {return this.verticalScale;}
     public int ceilingHeight() {return this.ceilingHeight;}
 
     public NamespacedMapImage getCeiling() {return this.ceiling;}
