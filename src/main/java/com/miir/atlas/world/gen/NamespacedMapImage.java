@@ -99,7 +99,7 @@ public class NamespacedMapImage {
         return i;
     }
 
-    public void initialize(MinecraftServer server) throws IOException {
+    public NamespacedMapImage initialize(MinecraftServer server) throws IOException {
         if (Atlas.MAPS.containsKey(this.path)) {
             this.pixels = Atlas.MAPS.get(this.path).getPixels();
         } else {
@@ -120,6 +120,7 @@ public class NamespacedMapImage {
         }
         this.initialized = true;
         Atlas.MAPS.put(this.path, this);
+        return this;
     }
 
     private void populate(BufferedImage image) {
@@ -201,6 +202,14 @@ public class NamespacedMapImage {
 
 
     public double transformToNoise(double x, double y, double z) {
+//        int horizontalScale = 1;
+//        float xR = (float) (x/horizontalScale);
+//        float zR = (float) (z/horizontalScale);
+//        xR += this.getWidth()  / 2f; // these will always be even numbers
+//        zR += this.getHeight() / 2f;
+//        if (xR < 0 || zR < 0 || xR >= this.getWidth() || zR >= this.getHeight()) return -1;
+//        int truncatedX = (int)Math.floor(xR);
+//        int truncatedZ = (int)Math.floor(zR);
         int elevation;
         try {
             elevation = this.getPixels()[(int) z][(int) x];

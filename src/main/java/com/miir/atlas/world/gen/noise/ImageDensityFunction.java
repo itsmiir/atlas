@@ -6,6 +6,9 @@ import com.mojang.serialization.Codec;
 import com.mojang.serialization.codecs.RecordCodecBuilder;
 import net.minecraft.util.dynamic.CodecHolder;
 import net.minecraft.world.gen.densityfunction.DensityFunction;
+import org.spongepowered.asm.mixin.injection.At;
+
+import java.io.IOException;
 
 public class ImageDensityFunction implements DensityFunction {
     public static final Codec<ImageDensityFunction> CODEC = RecordCodecBuilder.create(instance -> instance.group(
@@ -19,8 +22,11 @@ public class ImageDensityFunction implements DensityFunction {
         this.path = path;
         this.map = null;
     }
-    private ImageDensityFunction(NamespacedMapImage map, String path) {
-        if (map == null) map = new NamespacedMapImage(Atlas.MAPS.get(path));
+    private ImageDensityFunction(NamespacedMapImage map, String path) throws IOException {
+        if (map == null) map = new NamespacedMapImage(
+                Atlas.MAPS.getOrDefault(
+                        path,
+                        new NamespacedMapImage(path, NamespacedMapImage.Type.GRAYSCALE).initialize(Atlas.SERVER)));
         this.map = map;
         this.path = map.getPath();
     }
@@ -33,7 +39,7 @@ public class ImageDensityFunction implements DensityFunction {
             this.map = new NamespacedMapImage(Atlas.MAPS.get(path));
         }
         if (this.map == null) throw new IllegalStateException();
-            return this.map.transformToNoise(pos.blockX(), pos.blockY(), pos.blockZ());
+            return this.map.transformToNoise(pos.blockX(), pos.blockY()*4, pos.blockZ());
     }
 
     @Override
@@ -43,7 +49,12 @@ public class ImageDensityFunction implements DensityFunction {
 
     @Override
     public DensityFunction apply(DensityFunctionVisitor visitor) {
-        return visitor.apply(new ImageDensityFunction(this.map, this.path));
+        try {
+            return visitor.apply(new ImageDensityFunction(this.map, this.path));
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+        throw new IllegalStateException("error loading map for image density function at "+this.path);
     }
 
     @Override

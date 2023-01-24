@@ -4,6 +4,7 @@
   "package": "com.miir.atlas.mixin",
   "compatibilityLevel": "JAVA_17",
   "mixins": [
+    "GenerationShapeConfigMixin",
     "MinecraftServerMixin",
     "RegistryElementCodecAccessor"
   ],
