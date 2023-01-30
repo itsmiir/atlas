@@ -6,7 +6,8 @@
   "name": "Atlas",
   "description": "an image-based world generator",
   "authors": [
-    "miir"
+    "miir",
+    "acikek"
   ],
   "contact": {
     "homepage": "https://github.com/itsmiir/",
