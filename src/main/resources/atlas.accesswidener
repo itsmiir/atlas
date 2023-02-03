@@ -4,3 +4,5 @@ extendable    class     net/minecraft/registry/entry/RegistryElementCodec
 accessible    method    net/minecraft/registry/entry/RegistryElementCodec  <init>              (Lnet/minecraft/registry/RegistryKey;Lcom/mojang/serialization/Codec;Z)V
 accessible    method    net/minecraft/world/gen/chunk/ChunkNoiseSampler    sampleBlockState    ()Lnet/minecraft/block/BlockState;
 accessible    method    net/minecraft/util/math/noise/DoublePerlinNoiseSampler    <init>    (Lnet/minecraft/util/math/random/Random;Lnet/minecraft/util/math/noise/DoublePerlinNoiseSampler$NoiseParameters;Z)V
+extendable    class    net/minecraft/world/gen/chunk/NoiseChunkGenerator
+accessible    method    net/minecraft/world/gen/chunk/NoiseChunkGenerator    createChunkNoiseSampler    (Lnet/minecraft/world/chunk/Chunk;Lnet/minecraft/world/gen/StructureAccessor;Lnet/minecraft/world/gen/chunk/Blender;Lnet/minecraft/world/gen/noise/NoiseConfig;)Lnet/minecraft/world/gen/chunk/ChunkNoiseSampler;

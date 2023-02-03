@@ -17,7 +17,7 @@ import java.util.Arrays;
 
 public class NamespacedMapImage {
 
-    private static final int EMPTY = -2;
+    public static final int EMPTY = -2;
 
     private String path;
     private Type type;
@@ -30,15 +30,22 @@ public class NamespacedMapImage {
     public NamespacedMapImage(String path, Type type) {
         this.path = path;
         this.type = type;
+        if (this.image != null) {
+            this.width = this.image.getWidth();
+            this.height = this.image.getHeight();
+        } else if (this.pixels != null) {
+            this.height = this.pixels.length;
+            this.width = this.pixels[0].length;
+        }
+
     }
     public NamespacedMapImage(NamespacedMapImage other) {
-        this.path = other.path;
-        this.type = other.type;
-        this.height = other.height;
-        this.width = other.width;
+        this(other.path, other.type);
         this.image = other.image;
         this.pixels = other.pixels;
         this.initialized = other.initialized;
+        this.width = other.width;
+        this.height = other.height;
     }
 
     public int[][] loadPixelsInRange(int x, int z, boolean grayscale, int radius) {
@@ -101,7 +108,7 @@ public class NamespacedMapImage {
 
     public NamespacedMapImage initialize(MinecraftServer server) throws IOException {
         if (Atlas.MAPS.containsKey(this.path)) {
-            this.pixels = Atlas.MAPS.get(this.path).getPixels();
+            this.pixels = Atlas.MAPS.get(this.path).getPixels().clone();
         } else {
             try {
                 getImage(this.path, server);
@@ -216,7 +223,9 @@ public class NamespacedMapImage {
         } catch (ArrayIndexOutOfBoundsException e) {
             elevation = 0;
         }
-        if (y <= elevation) return 1;
+        if (y <= elevation) {
+            return 1;
+        }
         return -1;
     }
     public NamespacedMapImage copy(NamespacedMapImage other) {

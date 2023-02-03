@@ -6,6 +6,7 @@
   "mixins": [
     "GenerationShapeConfigMixin",
     "MinecraftServerMixin",
+    "NoiseChunkGeneratorAccessor",
     "RegistryElementCodecAccessor"
   ],
   "injectors": {

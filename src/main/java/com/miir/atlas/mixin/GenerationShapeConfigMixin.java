@@ -14,10 +14,12 @@ public class GenerationShapeConfigMixin {
 
     @Overwrite
     public int horizontalBlockSize() {
-        return this.horizontalSize;
+//        return this.horizontalSize;
+        return 1;
     }
     @Overwrite
     public int verticalBlockSize() {
-        return this.verticalSize;
+//        return this.verticalSize;
+        return 1;
     }
 }

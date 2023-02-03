@@ -36,13 +36,6 @@ public abstract class MinecraftServerMixin {
                     throw new IllegalStateException(e);
                 }
             }
-            if (entry.getValue().chunkGenerator() instanceof AtlasChunkGenerator cg) {
-                try {
-                    cg.findMaps(server, entry.getKey().getValue().toString());
-                } catch (Exception e) {
-                    throw new IllegalStateException("error initializing: could not find maps for dimension "+entry.getKey().getValue().toString());
-                }
-            }
         }
     }
 }

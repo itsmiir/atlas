@@ -28,7 +28,7 @@ public class Atlas implements ModInitializer {
 
     @Override
     public void onInitialize() {
-        Registry.register(Registries.CHUNK_GENERATOR, id("atlas"), AtlasChunkGenerator.CODEC);
+//        Registry.register(Registries.CHUNK_GENERATOR, id("atlas"), AtlasChunkGenerator.CODEC);
         Registry.register(Registries.BIOME_SOURCE, id("atlas"), AtlasBiomeSource.CODEC);
         Registry.register(Registries.DENSITY_FUNCTION_TYPE, id("atlas"), ImageDensityFunction.CODEC);
     }
