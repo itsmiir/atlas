@@ -4,8 +4,14 @@
   "package": "com.miir.atlas.mixin",
   "compatibilityLevel": "JAVA_17",
   "mixins": [
+    "CarverMixin",
+    "MaterialRuleContextAccessor",
+    "MaterialRuleContextMixin",
     "MinecraftServerMixin",
-    "RegistryElementCodecAccessor"
+    "RegistryElementCodecAccessor",
+    "RegistryLoaderMixin",
+    "SurfaceBuilderMixin",
+    "ThreadedAnvilChunkStorageMixin"
   ],
   "injectors": {
     "defaultRequire": 1
