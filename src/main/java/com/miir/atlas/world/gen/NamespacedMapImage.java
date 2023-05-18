@@ -1,16 +1,13 @@
 package com.miir.atlas.world.gen;
 
 import com.miir.atlas.Atlas;
-import com.miir.atlas.world.gen.chunk.AtlasChunkGenerator;
 import net.minecraft.resource.Resource;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.util.Identifier;
 import net.minecraft.util.math.MathHelper;
-import org.jetbrains.annotations.Nullable;
 
 import javax.imageio.ImageIO;
 import java.awt.image.BufferedImage;
-import java.awt.image.Raster;
 import java.io.IOException;
 import java.util.Arrays;
 
@@ -36,20 +33,20 @@ public class NamespacedMapImage {
         this.type = type;
     }
 
-    public int[][] loadPixelsInRange(int x, int z, boolean grayscale, int radius) {
-        if (x >= this.width || x < 0 || z > this.height || z < 0) return this.pixels;
+    public void loadPixelsInRange(int x, int z, boolean grayscale, int radius) {
+        if (x >= this.width || x < 0 || z > this.height || z < 0) return;
         if (!this.initialized) {
             throw new IllegalStateException("tried to read from an uninitialized atlas!");
         }
         // todo: BufferedImage::getSubImage may be better for on-demand loading optimization
-        return this.getOrDownloadPixels(
-                Math.max(0, x-radius),
-                Math.max(0, z-radius),
-                Math.min(this.getWidth(), x+radius),
-                Math.min(this.getHeight(), z+radius), grayscale);
+        this.getOrDownloadPixels(
+                Math.max(0, x - radius),
+                Math.max(0, z - radius),
+                Math.min(this.getWidth(), x + radius),
+                Math.min(this.getHeight(), z + radius), grayscale);
     }
 
-    private int[][] getOrDownloadPixels(int x0, int z0, int x1, int z1, boolean grayscale) {
+    private void getOrDownloadPixels(int x0, int z0, int x1, int z1, boolean grayscale) {
         if (x0 >= this.width) x0 = this.width-1;
         if (x1 >= this.width) x1 = this.width-1;
         if (z0 >= this.height) z0 = this.height-1;
@@ -67,7 +64,6 @@ public class NamespacedMapImage {
                 Atlas.LOGGER.error("could not find map at " + path + "!");
             }
         }
-        return this.pixels;
     }
 
     private BufferedImage getImage(String path, MinecraftServer server) throws IOException {
@@ -87,7 +83,7 @@ public class NamespacedMapImage {
                 .getResource(id)
                 .orElse(null);
             if (imageResource == null) {
-                throw new IOException("could not find " + id);
+                throw new IOException("could not find " + id +"! is your image stored at that location?");
             }
         BufferedImage i = ImageIO.read(imageResource.getInputStream());
         this.image = i;
@@ -172,6 +168,17 @@ public class NamespacedMapImage {
         i11 = getPixels()[v1][u1];
         return (float) MathHelper.lerp2(Math.abs(xR), Math.abs(zR), i00, i10, i01, i11);
     }
+    public double getElevation(int x, int z, float horizontalScale, float verticalScale, int startingY) {
+        float xR = (x/horizontalScale);
+        float zR = (z/horizontalScale);
+        xR += this.getWidth()  / 2f; // these will always be even numbers
+        zR += this.getHeight() / 2f;
+        if (xR < 0 || zR < 0 || xR >= this.getWidth() || zR >= this.getHeight()) return Integer.MIN_VALUE;
+        int truncatedX = (int)Math.floor(xR);
+        int truncatedZ = (int)Math.floor(zR);
+        double d = this.lerp(truncatedX, xR-truncatedX, truncatedZ, zR-truncatedZ);
+        return verticalScale*d+ startingY;
+    }
 
     public String getPath() {
         return path;
@@ -188,4 +195,5 @@ public class NamespacedMapImage {
     public int[][] getPixels() {
         return pixels;
     }
+
 }

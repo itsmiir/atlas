@@ -1,10 +1,12 @@
 package com.miir.atlas.world.gen.cave;
 
+import com.miir.atlas.Atlas;
 import com.miir.atlas.world.gen.NamespacedMapImage;
 import com.mojang.serialization.Codec;
 import com.mojang.serialization.codecs.RecordCodecBuilder;
 import org.jetbrains.annotations.Nullable;
 
+@Deprecated
 public class CaveLayerEntry {
     private final NamespacedMapImage ceiling;
     private final NamespacedMapImage floor;
@@ -26,10 +28,10 @@ public class CaveLayerEntry {
         this.biomePath = biomePath;
         this.ceilingPath = ceilingPath;
         this.floorPath = floorPath;
-        this.ceiling = new NamespacedMapImage(ceilingPath, NamespacedMapImage.Type.GRAYSCALE);
-        this.floor = new NamespacedMapImage(ceilingPath, NamespacedMapImage.Type.GRAYSCALE);
+        this.ceiling = Atlas.getOrCreateMap(ceilingPath, NamespacedMapImage.Type.GRAYSCALE);
+        this.floor = Atlas.getOrCreateMap(floorPath, NamespacedMapImage.Type.GRAYSCALE);
         if (!this.biomePath.equals("")) {
-            this.biomes = new NamespacedMapImage(ceilingPath, NamespacedMapImage.Type.COLOR);
+            this.biomes = Atlas.getOrCreateMap(biomePath, NamespacedMapImage.Type.COLOR);
         }
     }
     public static final Codec<CaveLayerEntry> CODEC = RecordCodecBuilder.create(instance -> instance.group(

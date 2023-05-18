@@ -1,5 +1,25 @@
-accessWidener v2 named
+accessWidener  v2 named
 
-extendable class net/minecraft/registry/entry/RegistryElementCodec
 
+extendable class  net/minecraft/registry/entry/RegistryElementCodec
 accessible method net/minecraft/registry/entry/RegistryElementCodec <init> (Lnet/minecraft/registry/RegistryKey;Lcom/mojang/serialization/Codec;Z)V
+
+#chunk generator tingz
+accessible method net/minecraft/world/gen/chunk/ChunkNoiseSampler sampleBlockState ()Lnet/minecraft/block/BlockState;
+
+#surface rule predicate
+accessible class  net/minecraft/world/gen/surfacebuilder/MaterialRules$BooleanSupplier
+accessible class  net/minecraft/world/gen/surfacebuilder/MaterialRules$MaterialRuleContext
+accessible class  net/minecraft/world/gen/surfacebuilder/MaterialRules$FullLazyAbstractPredicate
+accessible field  net/minecraft/world/gen/surfacebuilder/MaterialRules$MaterialRuleContext blockX I
+accessible field  net/minecraft/world/gen/surfacebuilder/MaterialRules$MaterialRuleContext blockY I
+accessible field  net/minecraft/world/gen/surfacebuilder/MaterialRules$MaterialRuleContext blockZ I
+
+#dynamic registry
+accessible field  net/minecraft/registry/BuiltinRegistries REGISTRY_BUILDER Lnet/minecraft/registry/RegistryBuilder;
+mutable    field  net/minecraft/registry/RegistryLoader    DYNAMIC_REGISTRIES Ljava/util/List;
+
+#surface rule AMI stuff
+accessible method net/minecraft/world/gen/surfacebuilder/MaterialRules$BlockStateRule tryApply (III)Lnet/minecraft/block/BlockState;
+accessible method net/minecraft/world/gen/surfacebuilder/MaterialRules$MaterialRuleContext method_39551 ()I
+accessible  class net/minecraft/world/gen/surfacebuilder/MaterialRules$BlockStateRule
