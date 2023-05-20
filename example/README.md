@@ -1,86 +1,190 @@
 # how to create a dimension with atlas
 
-assuming you've [set up your datapack](https://minecraft.fandom.com/wiki/Data_pack), create a new dimension file at `namespace/dimension/<name>.json`. like all datapacks, you can put your file in the `minecraft` namespace and overwrite the vanilla dimensions if you want.
+## quick start/TL;DR:
+- copy the example datapack, avila
+- replace the biomes.png and heightmap.png files with your own biome and heightmap
+- ???
+- profit
 
-the example datapack included here [has a dimension file example](./avila/data/avila/dimension/avila.json) that you can simply paste and tweak if you want.
+## full tutorial
 
-## chunk generation & heightmaps
+assuming you've [set up your datapack](https://minecraft.fandom.com/wiki/Data_pack), create a new dimension file at
+`namespace/dimension/<name>.json`. like all datapacks, you can put your file in the `minecraft` namespace and overwrite
+the vanilla dimensions if you want.
 
-to enable atlas for this dimension, give the chunk generator a `type` of `atlas:atlas`. the atlas generator requires a **heightmap**. this needs to be a PNG file. place this image in your datapack anywhere, though know that the convention is to place it in the `atlas/map` folder as `heightmap.png`, so `<namespace>/atlas/map/heightmap.png` for example. you then need to link to this image in the generator's `height_map` key. following the conventions, this would be `namespace:atlas/map/heightmap`.
+the example datapack included here [has a dimension file example](./avila/data/avila/dimension/avila.json) that you can
+simply paste and tweak if you want. let's look at that file now:
 
-note that you'll most likely need to adjust the `starting_y` based on the heightmap. a heightmap pixel's value corresponds to its y position without being offset by `starting_y`. this means that if the heightmap's ocean pixel color is `#272727`, with each channel being decimal `39`, and the `starting_y` is `20`, then the ocean floor will begin at y `59`. assuming the sea level begins at y `63`, this would give you four blocks of ocean in this case.
-
-## other paths
-
-aquifers let you define the sea level at any point in the world. they work exactly the same as heightmaps. the sea level at any given coordinate is calculated as the minimum of `sea_level` and the aquifer value at that point. if you want to use an aquifer, add an `aquifer` field to your chunk generator right above `biome_source` and specify a path to the aquifer image. if you don't include this field, the generator will default to using the sea level everywhere.
-
-the `roof` and `ceiling_height` parameters [Atlas version 1.3 and up] let you create a roofed dimension like the nether. `roof` works like `aquifer` and `height_map`, except it's flipped upside down and placed at `ceiling_height`. for example, the nether roof's `ceiling_height` would be 128 in vanilla.
-
-
-the `vertical_scale` and `horizontal_scale` factors scale how many blocks correspond to a pixel. a `vertical_scale` of 1 means that each of the possible 256 values in the heightmap corresponds to an elevation change of one block. a `horizontal_scale` of 2 means that each pixel on the map represents a 2x2 block area ingame. **`horizontal_scale` needs to be set for both the chunk generator and the biome source.**
-
-note: these settings are still highly experimental and not recommended for use yet! for now, it's best to pre-upscale your maps before importing them
-
-
-## biome sources & biome maps
-
-you can use any biome source you want for the generator, but if you want to specify biomes with an image and fully take advantage of atlas, once again use `atlas:atlas`. repeat the same image procedure used for the heightmap instead using the key `biome_map` instead of `heightmap`. the convention is to name this biome image `biomes.png`, so following that, the resource location would be `namespace:atlas/map/biomes`.
-
-in addition, you can use any chunk generator with an atlas biome source.
-
-atlas will read the biome map pixel-by-pixel and determine the biome of the pixel's corresponding 2d coordinate in-game by its color. atlas needs to know how to fetch biomes from colors, so we need to specify a `biomes` list. this is a list of objects, each with a `biome` key and a `color` key. the `biome` key is any biome data value. you can use any available biome, from [the vanilla biomes](https://minecraft.fandom.com/wiki/Biome) to loaded modded ones. the `color` key is the color used in the image for that specific biome in its integer representation; for example, `#FFFFFF` is `16777215`. you can convert hex to decimal [with this tool](https://www.rapidtables.com/convert/number/hex-to-decimal.html).
-
-you can also specify a default biome under the `default` key for when atlas encounters a pixel with no matching color in the `biomes` key. 
-
-## advanced: what to put in generator `settings`
-
-the settings can be populated with normal settings for your dimension; however, any density functions you put in the noise router will be completely ignored. it's recommended that you use the following:
-
+`data/avila/dimension/avila.json`
 ```json5
-    "settings": {
-      "sea_level": 63,
-      "disable_mob_generation": false,
-      "aquifers_enabled": true,
-      "ore_veins_enabled": true,
-      "legacy_random_source": false,
-      "default_block": {
-        "Name": "minecraft:stone"
-      },
-      "default_fluid": {
-        "Name": "minecraft:water",
-        "Properties": {
-          "level": "0"
-        }
-      },
-      "noise": {
-        "min_y": -64,
-        "height": 384,
-        "size_horizontal": 1,
-        "size_vertical": 2
-      },
-      "noise_router": {
-        "barrier": 0,
-        "fluid_level_floodedness": 0,
-        "fluid_level_spread": 0,
-        "lava": 0,
-        "temperature": 0,
-        "vegetation": 0,
-        "continents": 0,
-        "erosion": 0,
-        "depth": 0,
-        "ridges": 0,
-        "initial_density_without_jaggedness": 0,
-        "final_density": {
-          "type": "minecraft:interpolated",
-          "argument": "minecraft:overworld/base_3d_noise"
+{
+  "type": "minecraft:overworld",
+  "generator": {
+    "type": "atlas:atlas",
+    "map_info": "avila:avila",
+    "biome_source": {
+      "type": "atlas:atlas",
+      "map_info": "avila:avila",
+      "biome_map": "avila:atlas/map/biomes",
+      "default": "minecraft:the_void",
+      "biomes": [
+        {
+          "biome": "minecraft:plains",
+          "color": 7180861
         },
-        "vein_toggle": 0,
-        "vein_ridged": 0,
-        "vein_gap": 0
-      },
-      "spawn_target": [],
-      "surface_rule": { ... } // see below
+        {
+          "biome": "minecraft:beach",
+          "color": 12890200
+        },
+        ...
+      ],
+      "cave_biomes": [
+        ...
+      ],
+      "below_depth": 10
+    },
+    "settings": "atlas:default"
   }
+}
 ```
 
-for the surface rule, because the density functions are ignored, the only change you need to make from vanilla is to remove all calls to `above_preliminary_surface`-- just unwrap whatever is inside.
+let's break down what each part of this file does.
+## dimension type
+
+the `type` field defines certain parameters about your world unrelated to atlas. it's a vanilla feature. when in doubt,
+just set it to `minecraft:overworld`. if you want to go deeper, research `dimension types`-- again, this is a vanilla
+feature. we're much more interested in the `generator` field.
+
+## generator
+
+to tell the game that you want this to be an atlas dimension, we set the `type` field *inside the `generator` field* to `atlas:atlas`.
+
+### map info
+
+`map_info` is a field that contains information about the terrain generation settings the mod should use. you can define
+it inline, but it's much easier to define it in its own seperate file, since you'll need to use it more than once per
+dimension. if you choose to go this route, a `map_info` should be stored at `/data/<namespace>/worldgen/atlas_map_info/path`.
+so in this example, the `map_info` `avila:avila` is stored [here](./avila/data/avila/worldgen/atlas_map_info/avila.json).
+see the "map info explained" section for how to configure this.
+
+### settings
+
+this field controls more nitty-gritty aspects of your world. default block, default fluid, et cetera. to make this process
+easier, you can just use one of the three provided presets: `atlas:default`, `atlas:no_entrances`, and `atlas:no_noise_caves`.
+they're pretty self-explanatory-- `default` is a normal world; `no_entrances` will remove the noise cave entrances from
+your world, giving you a cleaner surface, a nd `no_noise_caves` disables all noise-based cave, except the pre-1.18 caves
+that cut through the world regardless. if you want absolutely no caves, you'll need to remove the carvers from each
+biome you use. this isn't too hard; it's just a ton of copy-pasting json files. see the "manually modifying `settings`"
+section for some notes on how to modify this section more.
+
+### biome source
+
+the `biome_source` field controls how the biomes spawn in the world. the `type` should be `atlas:atlas`. the `map_info`
+field should be the same as the previous one.
+
+the `default` field is the name of the default biome the game should fall back on when no other biome fits. usually,
+`minecraft:the_void` is sufficient for this.
+
+`biome_map` is the path to your biome map PNG file. it can be anywhere in the datapack.
+
+`biomes` is a list of biomes that you want to have in your map. each biome entry has a `color` field and a `biome` field;
+these correspond to the color on the biome map that you want your biome to spawn at, and the name of the biome you want
+to spawn there.
+
+#### optional biome source fields:
+`cave_biomes` is a set of biomes that will populate the underground. these biomes are generated using the default world
+generator, and as such should be listed in vanilla's biome format. in theory, these biomes could be anything you want,
+but most people will want to simply copy and paste this field from the [example](./avila/data/avila/dimension/avila.json).
+the configuration in the default file will generate cave biomes as they are in the vanilla game.
+
+`below_depth` is the depth at which the cave biomes start spawning. for example, a `below_depth` of 10 means that cave
+biomes can generate a minimum of ten blocks below the surface. in practice, this is uncommon-- it's best (and most accurate
+to vanilla) to keep this value as low as possible.
+
+### map info explained
+
+the `map_info` json file looks like this:
+
+`/data/avila/worldgen/atlas_map_info/avila.json`
+```json5
+{
+  "height_map": "avila:atlas/map/heightmap",
+  "starting_y": 6,
+  "horizontal_scale": 1,
+  "vertical_scale": 1
+}
+```
+this object tells the game important information about the map:
+
+the `height_map` parameter tells the game where to find the heightmap file of the world in your datapack. it can be
+anywhere in the datapack.
+
+the `starting_y` parameter tells the game how high the lowest block in the heightmap should be-- i.e., `starting_y` is
+the elevation that a black pixel on the heightmap represents in-game.
+
+the `horizontal_` and `vertical_scale` parameters how to scale the image in-game. for example, a world with a both
+parameters set to 1 will mean that the world is as many blocks across as there are pixels, and that the lowest point on
+the surface will be 255 blocks below the highest point. a world with `horizontal_scale` set to 2 and `vertical_scale`
+set to 3 will mean that the world will be twice as many blocks across as there are pixels in the image, and the lowest
+point will be 768 blocks below the highest point. **these features are experimental! it's much preferred to do this
+scaling in your image file beforehand.**
+
+### other optional fields
+
+#### aquifers
+
+`aquifer` is an optional parameter for the `generator` object that allows you to specify the sea level at each point on
+the map. it works the exact same as a heightmap, but corresponds to sea level instead of terrain elevation.
+
+aquifers let you define the sea level at any point in the world. they work exactly the same as heightmaps. the sea level
+at any given coordinate is calculated as the minimum of `sea_level` and the aquifer value at that point. if you want to
+use an aquifer, add an `aquifer` field to your chunk generator and specify a path to the aquifer image, like so:
+```json5
+{
+  "generator": {
+    "type": "atlas:atlas",
+    "aquifer": "my_datapack:path/to/PNGfile"
+  }
+}
+```
+if you don't include this field, the generator will default to using the sea level everywhere.
+
+#### conditional biomes
+
+in some cases, you may be working an environment where some biomes may not be loaded-- for example, if you want to use a
+biome from another datapack, without including a hard dependency on that datapack. in that case, you can replace a biome
+entry with a priority list, like so:
+```json5
+[ // list of biomes
+  ...
+  {
+    // previous biome entry
+  },
+  {
+    "priority": [
+      "first_datapack:super_plains",
+      "second_datapack:better_plains",
+      "third_datapack:plains_two",
+      "minecraft:plains"
+    ],
+    "color": 5081666
+  },
+  {
+    // next biome entry
+  },
+  ...
+]
+```
+atlas will check if `first_datapack:super_plains` is loaded. if so, it will use that biome for that color. if not, it
+will check if `second_datapack:better_plains` is loaded, et cetera. **it is important to always end this list with a
+vanilla biome, so that the world generator always has something to fall back on.**
+
+#### manually modifying `settings`
+
+modifying the `settings` field allows you to have more control over how the world generates. here you can change things
+like default sea level, as well as manually modify cave generation. from a technical level, the world generates identically
+to a vanilla noise-based chunk generator below `below_depth` blocks beneath the surface, with a few key differences:
+- in order to have surface rules apply properly, you need to use `atlas:above_preliminary_surface` instead of
+  `minecraft:above_preliminary_surface` in your surface rule.
+- the `initial_density_without_jaggedness` function is what gets added to the surface generation to create cave entrances;
+  setting this to 1 will remove them entirely, and setting it to 0 will remove all surface terrain.
