@@ -6,6 +6,8 @@ accessible method net/minecraft/registry/entry/RegistryElementCodec <init> (Lnet
 
 #chunk generator tingz
 accessible method net/minecraft/world/gen/chunk/ChunkNoiseSampler sampleBlockState ()Lnet/minecraft/block/BlockState;
+accessible method net/minecraft/world/gen/chunk/ChunkNoiseSampler getHorizontalCellBlockCount ()I
+accessible method net/minecraft/world/gen/chunk/ChunkNoiseSampler getVerticalCellBlockCount ()I
 
 #surface rule predicate
 accessible class  net/minecraft/world/gen/surfacebuilder/MaterialRules$BooleanSupplier
@@ -21,5 +23,5 @@ mutable    field  net/minecraft/registry/RegistryLoader    DYNAMIC_REGISTRIES Lj
 
 #surface rule AMI stuff
 accessible method net/minecraft/world/gen/surfacebuilder/MaterialRules$BlockStateRule tryApply (III)Lnet/minecraft/block/BlockState;
-accessible method net/minecraft/world/gen/surfacebuilder/MaterialRules$MaterialRuleContext method_39551 ()I
+accessible method net/minecraft/world/gen/surfacebuilder/MaterialRules$MaterialRuleContext estimateSurfaceHeight ()I
 accessible  class net/minecraft/world/gen/surfacebuilder/MaterialRules$BlockStateRule

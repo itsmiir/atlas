@@ -38,7 +38,7 @@ public class AtlasBiomeSource extends BiomeSource {
 
 //    todo: read the mapInfo from the CG (probably harder to do than the surface rule)
     protected AtlasBiomeSource(String path, List<BiomeEntry> biomeToColor, Optional<MultiNoiseUtil.Entries<RegistryEntry<Biome>>> caveBiomes, Optional<RegistryEntry<Biome>> defaultBiome, RegistryEntry<AtlasMapInfo> mapInfo, int belowDepth) {
-        super(Stream.concat(biomeToColor.stream().map(BiomeEntry::getTopBiome), caveBiomes.isPresent() ? (caveBiomes.get().getEntries().stream().map(Pair::getSecond)) : Stream.empty()).toList());
+        super();
         this.image = Atlas.getOrCreateMap(path, NamespacedMapImage.Type.COLOR);
         this.biomeEntries = biomeToColor;
         this.caveBiomes = caveBiomes;
@@ -61,7 +61,7 @@ public class AtlasBiomeSource extends BiomeSource {
             .listOf()).xmap(MultiNoiseUtil.Entries::new, MultiNoiseUtil.Entries::getEntries).optionalFieldOf("cave_biomes").forGetter(AtlasBiomeSource::getCaveBiomes),
             Biome.REGISTRY_CODEC.optionalFieldOf("default").forGetter(AtlasBiomeSource::getDefaultBiome),
             AtlasMapInfo.REGISTRY_CODEC.fieldOf("map_info").forGetter(AtlasBiomeSource::getMapInfo),
-            Codec.INT.optionalFieldOf("below_depth", Integer.MIN_VALUE).forGetter(AtlasBiomeSource::getBelowDepth)
+            Codec.INT.optionalFieldOf("below_depth", Integer.MAX_VALUE).forGetter(AtlasBiomeSource::getBelowDepth)
 
     ).apply(instance, AtlasBiomeSource::new));
 
@@ -78,6 +78,11 @@ public class AtlasBiomeSource extends BiomeSource {
     @Override
     protected Codec<AtlasBiomeSource> getCodec() {
         return CODEC;
+    }
+
+    @Override
+    protected Stream<RegistryEntry<Biome>> biomeStream() {
+        return Stream.concat(biomeEntries.stream().map(BiomeEntry::getTopBiome), caveBiomes.isPresent() ? (caveBiomes.get().getEntries().stream().map(Pair::getSecond)) : Stream.empty());
     }
 
     @Override

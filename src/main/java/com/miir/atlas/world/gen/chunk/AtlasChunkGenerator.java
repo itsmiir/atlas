@@ -217,7 +217,7 @@ public class AtlasChunkGenerator extends ChunkGenerator {
     @Override
     public CompletableFuture<Chunk> populateNoise(Executor executor, Blender blender, NoiseConfig noiseConfig, StructureAccessor structureAccessor, Chunk chunk) {
         GenerationShapeConfig generationShapeConfig = this.settings.value().generationShapeConfig().trimHeight(chunk.getHeightLimitView());
-        int k = MathHelper.floorDiv(generationShapeConfig.height(), generationShapeConfig.verticalBlockSize());
+        int k = MathHelper.floorDiv(generationShapeConfig.height(), generationShapeConfig.verticalSize());
         if (k <= 0) {
             return CompletableFuture.completedFuture(chunk);
         }
@@ -229,56 +229,57 @@ public class AtlasChunkGenerator extends ChunkGenerator {
         zR += this.heightmap.getHeight() / 2f;
         int truncatedX = (int)Math.floor(xR);
         int truncatedZ = (int)Math.floor(zR);
+        int minimumCellY = MathHelper.floorDiv(generationShapeConfig.minimumY(), generationShapeConfig.verticalCellBlockCount());
+        int cellHeight = MathHelper.floorDiv(generationShapeConfig.height(), generationShapeConfig.verticalCellBlockCount());
         if (truncatedX < 0 || truncatedZ < 0 || truncatedX >= this.heightmap.getWidth() || truncatedZ >= this.heightmap.getHeight()) return CompletableFuture.completedFuture(chunk);
         this.heightmap.loadPixelsInRange(truncatedX, truncatedZ, true, Atlas.GEN_RADIUS);
         if (this.aquifer != null) this.aquifer.loadPixelsInRange(truncatedX, truncatedZ, true, Atlas.GEN_RADIUS);
-        return CompletableFuture.supplyAsync(Util.debugSupplier("wgen_fill_noise", () -> this.populateNoise(chunk, structureAccessor, blender, noiseConfig)), Util.getMainWorkerExecutor());
+        return CompletableFuture.supplyAsync(Util.debugSupplier("wgen_fill_noise", () -> this.populateNoise(chunk, structureAccessor, blender, noiseConfig, minimumCellY, cellHeight)), Util.getMainWorkerExecutor());
     }
-    private Chunk populateNoise(Chunk chunk, StructureAccessor accessor, Blender blender, NoiseConfig noiseConfig) {
-        ChunkNoiseSampler chunkNoiseSampler = chunk.getOrCreateChunkNoiseSampler(chunk1 -> createChunkNoiseSampler(chunk, accessor, blender, noiseConfig));
-        int minY = settings.value().generationShapeConfig().minimumY();
+    private Chunk populateNoise(Chunk chunk, StructureAccessor accessor, Blender blender, NoiseConfig noiseConfig, int minimumCellY, int cellHeight) {
+        ChunkNoiseSampler chunkNoiseSampler = chunk.getOrCreateChunkNoiseSampler(chunk1 -> this.createChunkNoiseSampler(chunk, accessor, blender, noiseConfig));
         Heightmap oceanHeightmap = chunk.getHeightmap(Heightmap.Type.OCEAN_FLOOR_WG);
         Heightmap surfaceHeightmap = chunk.getHeightmap(Heightmap.Type.WORLD_SURFACE_WG);
-        BlockState defaultBlock = this.settings.value().defaultBlock();
-        BlockState defaultFluid = this.settings.value().defaultFluid();
-        BlockPos.Mutable mutable = new BlockPos.Mutable();
-        AquiferSampler aquiferSampler = chunkNoiseSampler.getAquiferSampler();
-        chunkNoiseSampler.sampleStartNoise();
-        GenerationShapeConfig generationShapeConfig = this.settings.value().generationShapeConfig();
-        int minimumCellY = MathHelper.floorDiv(generationShapeConfig.minimumY(), generationShapeConfig.verticalBlockSize());
-        int cellHeight = MathHelper.floorDiv(generationShapeConfig.height(), generationShapeConfig.verticalBlockSize());
         ChunkPos chunkPos = chunk.getPos();
         int i = chunkPos.getStartX();
         int j = chunkPos.getStartZ();
-        int k = generationShapeConfig.horizontalBlockSize();
-        int l = generationShapeConfig.verticalBlockSize();
+        AquiferSampler aquiferSampler = chunkNoiseSampler.getAquiferSampler();
+        chunkNoiseSampler.sampleStartDensity();
+        BlockPos.Mutable mutable = new BlockPos.Mutable();
+        int minY = settings.value().generationShapeConfig().minimumY();
+        int k = chunkNoiseSampler.getHorizontalCellBlockCount();
+        int l = chunkNoiseSampler.getVerticalCellBlockCount();
         int m = 16 / k;
         int n = 16 / k;
+        BlockState defaultBlock = this.settings.value().defaultBlock();
+        BlockState defaultFluid = this.settings.value().defaultFluid();
         for (int o = 0; o < m; ++o) {
-            chunkNoiseSampler.sampleEndNoise(o);
+            chunkNoiseSampler.sampleEndDensity(o);
             for (int p = 0; p < n; ++p) {
-                ChunkSection chunkSection = chunk.getSection(chunk.countVerticalSections() - 1);
+                int q1 = chunk.countVerticalSections() - 1;
+                ChunkSection chunkSection = chunk.getSection(q1);
                 for (int q = cellHeight - 1; q >= 0; --q) {
-                    chunkNoiseSampler.sampleNoiseCorners(q, p);
+                    chunkNoiseSampler.onSampledCellCorners(q, p);
                     for (int r = l - 1; r >= 0; --r) {
                         int s = (minimumCellY + q) * l + r;
                         int t = s & 0xF;
                         int u = chunk.getSectionIndex(s);
-                        if (chunk.getSectionIndex(chunkSection.getYOffset()) != u) {
+                        if (q1 != u) {
+                            q1 = u;
                             chunkSection = chunk.getSection(u);
                         }
                         double d = (double) r / (double) l;
-                        chunkNoiseSampler.sampleNoiseY(s, d);
+                        chunkNoiseSampler.interpolateY(s, d);
                         for (int v = 0; v < k; ++v) {
                             int w = i + o * k + v;
                             int x = w & 0xF;
                             double e = (double) v / (double) k;
-                            chunkNoiseSampler.sampleNoiseX(w, e);
+                            chunkNoiseSampler.interpolateX(w, e);
                             for (int y = 0; y < k; ++y) {
                                 int z = j + p * k + y;
                                 int aa = z & 0xF;
                                 double f = (double) y / (double) k;
-                                chunkNoiseSampler.sampleNoiseZ(z, f);
+                                chunkNoiseSampler.interpolateZ(z, f);
                                 int blockX = chunkNoiseSampler.blockX();
                                 int blockY = chunkNoiseSampler.blockY();
                                 int blockZ = chunkNoiseSampler.blockZ();
@@ -311,9 +312,6 @@ public class AtlasChunkGenerator extends ChunkGenerator {
                                         state = AIR;
                                     }
                                     chunk.setBlockState(mutable, state, false);
-                                    if (defaultBlock.getLuminance() != 0 && chunk instanceof ProtoChunk) {
-                                        ((ProtoChunk) chunk).addLightSource(mutable);
-                                    }
                                     surfaceHeightmap.trackUpdate(blockX & 0xF, blockY, blockZ & 0xF, state);
                                     oceanHeightmap.trackUpdate(blockX & 0xF, blockY, blockZ & 0xF, state);
                                 } else {
@@ -322,10 +320,6 @@ public class AtlasChunkGenerator extends ChunkGenerator {
                                         state = this.settings.value().defaultBlock();
                                     }
                                     if ((state == AIR || SharedConstants.isOutsideGenerationArea(chunk.getPos()))) continue;
-                                    if (state.getLuminance() != 0 && chunk instanceof ProtoChunk) {
-                                        mutable.set(w, s, z);
-                                        ((ProtoChunk)chunk).addLightSource(mutable);
-                                    }
                                     chunkSection.setBlockState(x, t, aa, state, false);
                                     oceanHeightmap.trackUpdate(x, s, aa, state);
                                     surfaceHeightmap.trackUpdate(x, s, aa, state);

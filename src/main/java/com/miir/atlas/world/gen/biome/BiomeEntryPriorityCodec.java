@@ -32,7 +32,7 @@ public class BiomeEntryPriorityCodec extends RegistryElementCodec<Biome> {
         if (ops instanceof RegistryOps registryOps) {
             Optional<RegistryEntryLookup<Biome>> optional = registryOps.getEntryLookup(accessor.getRegistryRef());
             if (optional.isEmpty()) {
-                return DataResult.error("Registry does not exist: " + accessor.getRegistryRef());
+                return DataResult.error(() -> ("Registry does not exist: " + accessor.getRegistryRef()));
             }
             RegistryEntryLookup<Biome> registryEntryLookup = optional.get();
             DataResult<Pair<Identifier, T>> dataResult = Identifier.CODEC.decode(ops, input);

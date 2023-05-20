@@ -112,7 +112,7 @@ public abstract class SurfaceBuilderMixin implements AMISurfaceBuilderAccessor {
                     blockColumn.setState(u, blockState2);
                 }
                 if (!registryEntry.matchesKey(BiomeKeys.FROZEN_OCEAN) && !registryEntry.matchesKey(BiomeKeys.DEEP_FROZEN_OCEAN)) continue;
-                this.placeIceberg(materialRuleContext.method_39551(), registryEntry.value(), blockColumn, mutable2, m, n, o);
+                this.placeIceberg(materialRuleContext.estimateSurfaceHeight(), registryEntry.value(), blockColumn, mutable2, m, n, o);
             }
         }
     }
