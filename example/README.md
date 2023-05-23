@@ -30,10 +30,17 @@ simply paste and tweak if you want. let's look at that file now:
       "biomes": [
         {
           "biome": "minecraft:plains",
-          "color": 7180861
+          "color": 7180861 // this is the base 10 representation of the hexadecimal number 0x6D923D. your OS
+          // likely has a calculator with a programmer mode that will help you convert
         },
         {
           "biome": "minecraft:beach",
+          // if you wanted to use a non-vanilla biome here, you could do so by replacing the above line with the following:
+          // "priority": [
+          //   "some_datapack:awesome_beach",
+          //   "minecraft:beach"
+          // ],
+          // of course, remembering to 
           "color": 12890200
         },
         ...
@@ -71,7 +78,7 @@ see the "map info explained" section for how to configure this.
 
 this field controls more nitty-gritty aspects of your world. default block, default fluid, et cetera. to make this process
 easier, you can just use one of the three provided presets: `atlas:default`, `atlas:no_entrances`, and `atlas:no_noise_caves`.
-they're pretty self-explanatory-- `default` is a normal world; `no_entrances` will remove the noise cave entrances from 
+they're pretty self-explanatory-- `default` is a normal world; `no_entrances` will remove the noise cave entrances from
 your world, giving you a cleaner surface, a nd `no_noise_caves` disables all noise-based cave, except the pre-1.18 caves
 that cut through the world regardless. if you want absolutely no caves, you'll need to remove the carvers from each
 biome you use. this isn't too hard; it's just a ton of copy-pasting json files. see the "manually modifying `settings`"
@@ -80,7 +87,7 @@ section for some notes on how to modify this section more.
 ### biome source
 
 the `biome_source` field controls how the biomes spawn in the world. the `type` should be `atlas:atlas`. the `map_info`
-field should be the same as the previous one. 
+field should be the same as the previous one.
 
 the `default` field is the name of the default biome the game should fall back on when no other biome fits. usually,
 `minecraft:the_void` is sufficient for this.
@@ -95,11 +102,13 @@ to spawn there.
 `cave_biomes` is a set of biomes that will populate the underground. these biomes are generated using the default world
 generator, and as such should be listed in vanilla's biome format. in theory, these biomes could be anything you want,
 but most people will want to simply copy and paste this field from the [example](./avila/data/avila/dimension/avila.json).
-the configuration in the default file will generate cave biomes as they are in the vanilla game.
+the configuration in the default file will generate cave biomes as they are in the vanilla game. if you don't include this
+field, you won't get cave biomes.
 
 `below_depth` is the depth at which the cave biomes start spawning. for example, a `below_depth` of 10 means that cave
 biomes can generate a minimum of ten blocks below the surface. in practice, this is uncommon-- it's best (and most accurate
-to vanilla) to keep this value as low as possible.
+to vanilla) to keep this value as close to zero as possible (setting it negative could cause cave biomes to spawn above the
+surface, especially on the ocean floor!).
 
 ### map info explained
 
@@ -128,6 +137,8 @@ the surface will be 255 blocks below the highest point. a world with `horizontal
 set to 3 will mean that the world will be twice as many blocks across as there are pixels in the image, and the lowest
 point will be 768 blocks below the highest point. **these features are experimental! it's much preferred to do this
 scaling in your image file beforehand.**
+
+note: the `map_info` field _must_ be located in the folder `/data/<namespace>/worldgen/atlas_map_info/<path>.json`.
 
 ### other optional fields
 
@@ -185,6 +196,6 @@ modifying the `settings` field allows you to have more control over how the worl
 like default sea level, as well as manually modify cave generation. from a technical level, the world generates identically
 to a vanilla noise-based chunk generator below `below_depth` blocks beneath the surface, with a few key differences:
 - in order to have surface rules apply properly, you need to use `atlas:above_preliminary_surface` instead of
-`minecraft:above_preliminary_surface` in your surface rule.
+  `minecraft:above_preliminary_surface` in your surface rule.
 - the `initial_density_without_jaggedness` function is what gets added to the surface generation to create cave entrances;
-setting this to 1 will remove them entirely, and setting it to 0 will remove all surface terrain.
+  setting this to 1 will remove them entirely, and setting it to 0 will remove all surface terrain.
