@@ -30,10 +30,17 @@ simply paste and tweak if you want. let's look at that file now:
       "biomes": [
         {
           "biome": "minecraft:plains",
-          "color": 7180861
+          "color": 7180861 // this is the base 10 representation of the hexadecimal number 0x6D923D. your OS
+          // likely has a calculator with a programmer mode that will help you convert
         },
         {
           "biome": "minecraft:beach",
+          // if you wanted to use a non-vanilla biome here, you could do so by replacing the above line with the following:
+          // "priority": [
+          //   "some_datapack:awesome_beach",
+          //   "minecraft:beach"
+          // ],
+          // of course, remembering to 
           "color": 12890200
         },
         ...
@@ -95,11 +102,13 @@ to spawn there.
 `cave_biomes` is a set of biomes that will populate the underground. these biomes are generated using the default world
 generator, and as such should be listed in vanilla's biome format. in theory, these biomes could be anything you want,
 but most people will want to simply copy and paste this field from the [example](./avila/data/avila/dimension/avila.json).
-the configuration in the default file will generate cave biomes as they are in the vanilla game.
+the configuration in the default file will generate cave biomes as they are in the vanilla game. if you don't include this
+field, you won't get cave biomes.
 
 `below_depth` is the depth at which the cave biomes start spawning. for example, a `below_depth` of 10 means that cave
 biomes can generate a minimum of ten blocks below the surface. in practice, this is uncommon-- it's best (and most accurate
-to vanilla) to keep this value as low as possible.
+to vanilla) to keep this value as close to zero as possible (setting it negative could cause cave biomes to spawn above the
+surface, especially on the ocean floor!).
 
 ### map info explained
 
@@ -128,6 +137,8 @@ the surface will be 255 blocks below the highest point. a world with `horizontal
 set to 3 will mean that the world will be twice as many blocks across as there are pixels in the image, and the lowest
 point will be 768 blocks below the highest point. **these features are experimental! it's much preferred to do this
 scaling in your image file beforehand.**
+
+note: the `map_info` field _must_ be located in the folder `/data/<namespace>/worldgen/atlas_map_info/<path>.json`.
 
 ### other optional fields
 
