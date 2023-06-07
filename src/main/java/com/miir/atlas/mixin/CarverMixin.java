@@ -22,6 +22,9 @@ import org.spongepowered.asm.mixin.injection.callback.LocalCapture;
 
 import java.util.function.Function;
 
+/**
+ * hack fix to prevent caves from carving water. this is a bad solution and should be fixed
+ */
 @Mixin(Carver.class)
 public class CarverMixin<C extends CarverConfig> {
     @Shadow @Final protected static FluidState WATER;

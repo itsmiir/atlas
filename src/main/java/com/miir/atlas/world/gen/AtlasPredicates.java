@@ -44,7 +44,7 @@ public class AtlasPredicates {
                     // should only apply when carvers call this function, which is okay to always have grass
                     if (amiEntry == null) return true;
                     AtlasMapInfo ami = amiEntry.value();
-                    NamespacedMapImage nmi = Atlas.getOrCreateMap(ami.heightmap(), NamespacedMapImage.Type.GRAYSCALE);
+                    NamespacedMapImage nmi = Atlas.getOrCreateMap(ami.heightmap(), PngNamespacedMapImage.Type.GRAYSCALE);
                     double elevation = nmi.getElevation(this.context.blockX, this.context.blockZ, ami.horizontalScale(), ami.horizontalScale(), ami.startingY());
                     return this.context.blockY > elevation - AboveSurfaceMaterialCondition.this.depth;
                 }

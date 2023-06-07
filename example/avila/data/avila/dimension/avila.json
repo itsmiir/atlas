@@ -6,7 +6,7 @@
     "biome_source": {
       "type": "atlas:atlas",
       "map_info": "avila:avila",
-      "biome_map": "avila:atlas/map/biomes",
+      "biome_map": "avila:atlas/map/biomes.png",
       "default": "minecraft:the_void",
       "biomes": [
         {

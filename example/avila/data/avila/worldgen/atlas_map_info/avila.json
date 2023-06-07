@@ -1,5 +1,5 @@
 {
-  "height_map": "avila:atlas/map/heightmap",
+  "height_map": "avila:atlas/map/heightmap.png",
   "starting_y": 6,
   "horizontal_scale": 1,
   "vertical_scale": 1

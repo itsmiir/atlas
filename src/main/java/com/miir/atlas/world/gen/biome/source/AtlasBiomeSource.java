@@ -2,7 +2,7 @@ package com.miir.atlas.world.gen.biome.source;
 
 import com.miir.atlas.Atlas;
 import com.miir.atlas.world.gen.AtlasMapInfo;
-import com.miir.atlas.world.gen.NamespacedMapImage;
+import com.miir.atlas.world.gen.PngNamespacedMapImage;
 import com.miir.atlas.world.gen.biome.BiomeEntry;
 import com.mojang.datafixers.util.Pair;
 import com.mojang.serialization.Codec;
@@ -28,7 +28,7 @@ import java.util.stream.Stream;
 public class AtlasBiomeSource extends BiomeSource {
     public static final RegistryKey<Biome> EMPTY_BIOME = RegistryKey.of(RegistryKeys.BIOME, Atlas.id("empty"));
     private static final Identifier EMPTY = Atlas.id("_not_impl");
-    private final NamespacedMapImage image;
+    private final PngNamespacedMapImage image;
     private final List<BiomeEntry> biomeEntries;
     private final RegistryEntry<Biome> defaultBiome;
     private final RegistryEntry<AtlasMapInfo> mapInfo;
@@ -39,7 +39,7 @@ public class AtlasBiomeSource extends BiomeSource {
 //    todo: read the mapInfo from the CG (probably harder to do than the surface rule)
     protected AtlasBiomeSource(String path, List<BiomeEntry> biomeToColor, Optional<MultiNoiseUtil.Entries<RegistryEntry<Biome>>> caveBiomes, Optional<RegistryEntry<Biome>> defaultBiome, RegistryEntry<AtlasMapInfo> mapInfo, int belowDepth) {
         super(Stream.concat(biomeToColor.stream().map(BiomeEntry::getTopBiome), caveBiomes.isPresent() ? (caveBiomes.get().getEntries().stream().map(Pair::getSecond)) : Stream.empty()).toList());
-        this.image = Atlas.getOrCreateMap(path, NamespacedMapImage.Type.COLOR);
+        this.image = (PngNamespacedMapImage) Atlas.getOrCreateMap(path, PngNamespacedMapImage.Type.COLOR);
         this.biomeEntries = biomeToColor;
         this.caveBiomes = caveBiomes;
         this.defaultBiome = defaultBiome.orElse(this.biomeEntries.get(0).getTopBiome());
@@ -94,7 +94,7 @@ public class AtlasBiomeSource extends BiomeSource {
     public void addDebugInfo(List<String> info, BlockPos pos, MultiNoiseUtil.MultiNoiseSampler noiseSampler) {
         StringBuilder builder = new StringBuilder("Source: ");
         AtlasMapInfo ami = this.mapInfo.value();
-        double elevation = Atlas.getOrCreateMap(ami.heightmap(), NamespacedMapImage.Type.GRAYSCALE).getElevation(pos.getX(), pos.getZ(), ami.horizontalScale(), ami.verticalScale(), ami.startingY());
+        double elevation = Atlas.getOrCreateMap(ami.heightmap(), PngNamespacedMapImage.Type.GRAYSCALE).getElevation(pos.getX(), pos.getZ(), ami.horizontalScale(), ami.verticalScale(), ami.startingY());
         if (pos.getY() < (elevation - this.belowDepth)) {
             builder.append("Noise");
         } else {
@@ -110,7 +110,7 @@ public class AtlasBiomeSource extends BiomeSource {
         float horizontalScale = ami.horizontalScale();
         Identifier heightmapPath = ami.heightmap();
         // short-circuit with cave biomes
-        double elevation = Atlas.getOrCreateMap(heightmapPath, NamespacedMapImage.Type.GRAYSCALE).getElevation(x << 2, z << 2, horizontalScale, ami.verticalScale(), ami.startingY());
+        double elevation = Atlas.getOrCreateMap(heightmapPath, PngNamespacedMapImage.Type.GRAYSCALE).getElevation(x << 2, z << 2, horizontalScale, ami.verticalScale(), ami.startingY());
         if (y<<2 < (elevation - this.belowDepth)) {
             if (!this.mapInfo.value().heightmap().equals(EMPTY) && this.caveBiomes.isPresent()) {
                 RegistryEntry<Biome> biome = this.caveBiomes.get().get(noise.sample(x, y, z));
@@ -127,7 +127,7 @@ public class AtlasBiomeSource extends BiomeSource {
         z += this.image.getHeight() / 2;
         if (x < 0 || z < 0 || x >= this.image.getWidth() || z >= this.image.getHeight()) return this.defaultBiome;
 //        this.image.loadPixelsInRange(x, z, false, Atlas.GEN_RADIUS);
-        int color = this.image.getPixels()[z][x];
+        int color = (int)this.image.getPixels()[z][x];
         RegistryEntry<Biome> biome = this.biomeToColor.get(color);
         if (biome == null) {
             return this.getClosest(color);

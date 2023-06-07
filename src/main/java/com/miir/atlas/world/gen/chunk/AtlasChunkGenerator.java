@@ -5,6 +5,7 @@ import com.miir.atlas.Atlas;
 import com.miir.atlas.accessor.AMISurfaceBuilderAccessor;
 import com.miir.atlas.world.gen.AtlasMapInfo;
 import com.miir.atlas.world.gen.NamespacedMapImage;
+import com.miir.atlas.world.gen.PngNamespacedMapImage;
 import com.mojang.serialization.Codec;
 import com.mojang.serialization.codecs.RecordCodecBuilder;
 import net.minecraft.SharedConstants;
@@ -82,9 +83,9 @@ public class AtlasChunkGenerator extends ChunkGenerator {
         this.verticalScale = ami.value().verticalScale();
         if (this.verticalScale != 1) Atlas.LOGGER.warn("using non-default vertical scale for a dimension! this feature is in alpha, expect weird generation!");
         this.horizontalScale = ami.value().horizontalScale();
-        this.heightmap = Atlas.getOrCreateMap(ami.value().heightmap(), NamespacedMapImage.Type.GRAYSCALE);
-        this.aquifer = !aquiferPath.equals("") ? Atlas.getOrCreateMap(aquiferPath, NamespacedMapImage.Type.GRAYSCALE) :null;
-        this.roof = !roofPath.equals("") ? Atlas.getOrCreateMap(roofPath, NamespacedMapImage.Type.GRAYSCALE) : null;
+        this.heightmap = Atlas.getOrCreateMap(ami.value().heightmap(), PngNamespacedMapImage.Type.GRAYSCALE);
+        this.aquifer = !aquiferPath.equals("") ? Atlas.getOrCreateMap(aquiferPath, PngNamespacedMapImage.Type.GRAYSCALE) :null;
+        this.roof = !roofPath.equals("") ? Atlas.getOrCreateMap(roofPath, PngNamespacedMapImage.Type.GRAYSCALE) : null;
         this.settings = settings;
     }
 

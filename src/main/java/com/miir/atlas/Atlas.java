@@ -1,8 +1,6 @@
 package com.miir.atlas;
 
-import com.miir.atlas.world.gen.AtlasMapInfo;
-import com.miir.atlas.world.gen.AtlasPredicates;
-import com.miir.atlas.world.gen.NamespacedMapImage;
+import com.miir.atlas.world.gen.*;
 import com.miir.atlas.world.gen.biome.source.AtlasBiomeSource;
 import com.miir.atlas.world.gen.chunk.AtlasChunkGenerator;
 import net.fabricmc.api.ModInitializer;
@@ -22,7 +20,7 @@ public class Atlas implements ModInitializer {
     public static MinecraftServer SERVER;
     public static final RegistryKey<Registry<AtlasMapInfo>> ATLAS_INFO = RegistryKey.ofRegistry(Atlas.id("worldgen/atlas_map_info"));
     public static HashMap<Identifier, NamespacedMapImage> GRAYSCALE_MAPS = new HashMap<>();
-    public static HashMap<Identifier, NamespacedMapImage> COLOR_MAPS = new HashMap<>();
+    public static HashMap<Identifier, PngNamespacedMapImage > COLOR_MAPS = new HashMap<>();
     public static Identifier id(String path) {
         return new Identifier(MOD_ID, path);
     }
@@ -39,21 +37,27 @@ public class Atlas implements ModInitializer {
         AtlasPredicates.register();
     }
     public static NamespacedMapImage getOrCreateMap(String path, NamespacedMapImage.Type type) {
-        if (type == NamespacedMapImage.Type.COLOR) {
-            return COLOR_MAPS.computeIfAbsent(new Identifier(path), k -> new NamespacedMapImage(path, NamespacedMapImage.Type.COLOR));
-        } else if (type == NamespacedMapImage.Type.GRAYSCALE) {
-            return GRAYSCALE_MAPS.computeIfAbsent(new Identifier(path), k -> new NamespacedMapImage(path, NamespacedMapImage.Type.GRAYSCALE));
+        if (path.endsWith(".png")) {
+            if (type == PngNamespacedMapImage.Type.COLOR) {
+                return COLOR_MAPS.computeIfAbsent(new Identifier(path), k -> new PngNamespacedMapImage(path, type));
+            } else if (type == PngNamespacedMapImage.Type.GRAYSCALE) {
+                return GRAYSCALE_MAPS.computeIfAbsent(new Identifier(path), k -> new PngNamespacedMapImage(path, type));
+            } else {
+                throw new IllegalArgumentException("tried to create a map with an unknown type!");
+            }
+        } else if (path.endsWith(".tiff") || path.endsWith(".tif")) {
+            if (type == PngNamespacedMapImage.Type.COLOR) {
+                throw new IllegalArgumentException("color tiff maps are currently not supported!");
+            } else if (type == PngNamespacedMapImage.Type.GRAYSCALE) {
+                return GRAYSCALE_MAPS.computeIfAbsent(new Identifier(path), k -> new TiffNamespacedMapImage(path));
+            } else {
+                throw new IllegalArgumentException("tried to create a map with an unknown type!");
+            }
         } else {
-            throw new IllegalArgumentException("tried to create a map with an unknown type!");
+            throw new IllegalArgumentException("tried to create a map from an unknown filetype! allowed file extensions are: .png, .tif, .tiff");
         }
     }
     public static NamespacedMapImage getOrCreateMap(Identifier path, NamespacedMapImage.Type type) {
-        if (type == NamespacedMapImage.Type.COLOR) {
-            return COLOR_MAPS.computeIfAbsent(path, k -> new NamespacedMapImage(path.toString(), NamespacedMapImage.Type.COLOR));
-        } else if (type == NamespacedMapImage.Type.GRAYSCALE) {
-            return GRAYSCALE_MAPS.computeIfAbsent(path, k -> new NamespacedMapImage(path.toString(), NamespacedMapImage.Type.GRAYSCALE));
-        } else {
-            throw new IllegalArgumentException("tried to create a map with an unknown type!");
-        }
+        return getOrCreateMap(path.toString(), type);
     }
 }
