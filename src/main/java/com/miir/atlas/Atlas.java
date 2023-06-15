@@ -6,13 +6,14 @@ import com.miir.atlas.world.gen.NamespacedMapImage;
 import com.miir.atlas.world.gen.biome.source.AtlasBiomeSource;
 import com.miir.atlas.world.gen.chunk.AtlasChunkGenerator;
 import net.fabricmc.api.ModInitializer;
-import net.minecraft.registry.*;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.util.Identifier;
+import net.minecraft.util.registry.BuiltinRegistries;
+import net.minecraft.util.registry.Registry;
+import net.minecraft.util.registry.RegistryKey;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.ArrayList;
 import java.util.HashMap;
 
 public class Atlas implements ModInitializer {
@@ -28,14 +29,11 @@ public class Atlas implements ModInitializer {
     }
     @Override
     public void onInitialize() {
-        ArrayList<RegistryLoader.Entry<?>> list = new ArrayList<>();
-        list.add(new RegistryLoader.Entry<>(ATLAS_INFO, AtlasMapInfo.CODEC));
-        list.addAll(RegistryLoader.DYNAMIC_REGISTRIES);
-        RegistryLoader.DYNAMIC_REGISTRIES = list;
-        BuiltinRegistries.REGISTRY_BUILDER.addRegistry(ATLAS_INFO, AtlasMapInfo::bootstrap);
+        BuiltinRegistries.addRegistry(ATLAS_INFO, AtlasMapInfo::bootstrap);
 
-        Registry.register(Registries.CHUNK_GENERATOR, id("atlas"), AtlasChunkGenerator.CODEC);
-        Registry.register(Registries.BIOME_SOURCE, id("atlas"), AtlasBiomeSource.CODEC);
+        Registry.register(Registry.CHUNK_GENERATOR, id("atlas"), AtlasChunkGenerator.CODEC);
+        Registry.register(Registry.BIOME_SOURCE, id("atlas"), AtlasBiomeSource.CODEC);
+
         AtlasPredicates.register();
     }
     public static NamespacedMapImage getOrCreateMap(String path, NamespacedMapImage.Type type) {

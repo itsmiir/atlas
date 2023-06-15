@@ -1,6 +1,6 @@
 package com.miir.atlas.mixin;
 
-import net.minecraft.registry.RegistryLoader;
+import net.minecraft.util.dynamic.RegistryLoader;
 import org.spongepowered.asm.mixin.Mixin;
 
 // todo fixme (llamalad malding)

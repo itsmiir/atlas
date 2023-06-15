@@ -8,13 +8,13 @@ import com.mojang.datafixers.util.Pair;
 import com.mojang.serialization.Codec;
 import com.mojang.serialization.codecs.RecordCodecBuilder;
 import it.unimi.dsi.fastutil.ints.Int2ObjectArrayMap;
-import net.minecraft.registry.RegistryKey;
-import net.minecraft.registry.RegistryKeys;
-import net.minecraft.registry.entry.RegistryEntry;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.util.Identifier;
 import net.minecraft.util.dynamic.Codecs;
 import net.minecraft.util.math.BlockPos;
+import net.minecraft.util.registry.Registry;
+import net.minecraft.util.registry.RegistryEntry;
+import net.minecraft.util.registry.RegistryKey;
 import net.minecraft.world.biome.Biome;
 import net.minecraft.world.biome.source.BiomeSource;
 import net.minecraft.world.biome.source.util.MultiNoiseUtil;
@@ -26,7 +26,7 @@ import java.util.Set;
 import java.util.stream.Stream;
 
 public class AtlasBiomeSource extends BiomeSource {
-    public static final RegistryKey<Biome> EMPTY_BIOME = RegistryKey.of(RegistryKeys.BIOME, Atlas.id("empty"));
+    public static final RegistryKey<Biome> EMPTY_BIOME = RegistryKey.of(Registry.BIOME_KEY, Atlas.id("empty"));
     private static final Identifier EMPTY = Atlas.id("_not_impl");
     private final NamespacedMapImage image;
     private final List<BiomeEntry> biomeEntries;

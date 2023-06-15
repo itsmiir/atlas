@@ -4,15 +4,14 @@ import com.miir.atlas.Atlas;
 import com.miir.atlas.accessor.MapInfoAccessor;
 import com.mojang.serialization.Codec;
 import com.mojang.serialization.codecs.RecordCodecBuilder;
-import net.minecraft.registry.Registries;
-import net.minecraft.registry.Registry;
-import net.minecraft.registry.entry.RegistryEntry;
 import net.minecraft.util.dynamic.CodecHolder;
+import net.minecraft.util.registry.Registry;
+import net.minecraft.util.registry.RegistryEntry;
 import net.minecraft.world.gen.surfacebuilder.MaterialRules;
 
 public class AtlasPredicates {
     public static void register() {
-        Registry.register(Registries.MATERIAL_CONDITION, Atlas.id("above_preliminary_surface"), AboveSurfaceMaterialCondition.CODEC.codec());
+        Registry.register(Registry.MATERIAL_CONDITION, Atlas.id("above_preliminary_surface"), AboveSurfaceMaterialCondition.CODEC.codec());
     }
 
     /**

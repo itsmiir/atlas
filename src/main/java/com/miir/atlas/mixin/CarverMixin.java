@@ -2,8 +2,8 @@ package com.miir.atlas.mixin;
 
 import net.minecraft.block.BlockState;
 import net.minecraft.fluid.FluidState;
-import net.minecraft.registry.entry.RegistryEntry;
 import net.minecraft.util.math.BlockPos;
+import net.minecraft.util.registry.RegistryEntry;
 import net.minecraft.world.biome.Biome;
 import net.minecraft.world.chunk.Chunk;
 import net.minecraft.world.gen.carver.Carver;

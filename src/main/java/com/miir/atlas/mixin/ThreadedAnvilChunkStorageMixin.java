@@ -2,11 +2,11 @@ package com.miir.atlas.mixin;
 
 import com.miir.atlas.world.gen.chunk.AtlasChunkGenerator;
 import com.mojang.datafixers.DataFixer;
-import net.minecraft.registry.RegistryKeys;
 import net.minecraft.server.WorldGenerationProgressListener;
 import net.minecraft.server.world.ServerWorld;
 import net.minecraft.server.world.ThreadedAnvilChunkStorage;
 import net.minecraft.structure.StructureTemplateManager;
+import net.minecraft.util.registry.Registry;
 import net.minecraft.util.thread.ThreadExecutor;
 import net.minecraft.world.chunk.ChunkProvider;
 import net.minecraft.world.chunk.ChunkStatusChangeListener;
@@ -35,12 +35,12 @@ public class ThreadedAnvilChunkStorageMixin {
 
     @Inject(method = "<init>",
             at = @At(
-                    value = "INVOKE_ASSIGN",
-                    target = "Lnet/minecraft/world/gen/chunk/ChunkGenerator;createStructurePlacementCalculator(Lnet/minecraft/registry/RegistryWrapper;Lnet/minecraft/world/gen/noise/NoiseConfig;J)Lnet/minecraft/world/gen/chunk/placement/StructurePlacementCalculator;",
+                    value = "FIELD",
+                    target = "Lnet/minecraft/server/world/ThreadedAnvilChunkStorage;mainThreadExecutor:Lnet/minecraft/util/thread/ThreadExecutor;",
                     shift = At.Shift.BEFORE))
     private void atlas_populateNoises(ServerWorld world, LevelStorage.Session session, DataFixer dataFixer, StructureTemplateManager structureTemplateManager, Executor executor, ThreadExecutor mainThreadExecutor, ChunkProvider chunkProvider, ChunkGenerator chunkGenerator, WorldGenerationProgressListener worldGenerationProgressListener, ChunkStatusChangeListener chunkStatusChangeListener, Supplier persistentStateManagerFactory, int viewDistance, boolean dsync, CallbackInfo ci) {
         if (chunkGenerator instanceof AtlasChunkGenerator atlasChunkGenerator) {
-            this.noiseConfig = NoiseConfig.create(atlasChunkGenerator.getSettings().value(), world.getRegistryManager().getWrapperOrThrow(RegistryKeys.NOISE_PARAMETERS), world.getSeed());
+            this.noiseConfig = NoiseConfig.create(atlasChunkGenerator.getSettings().value(), world.getRegistryManager().get(Registry.NOISE_KEY), world.getSeed());
         }
     }
 }

@@ -2,7 +2,7 @@ package com.miir.atlas.mixin;
 
 import com.miir.atlas.accessor.MapInfoAccessor;
 import com.miir.atlas.world.gen.AtlasMapInfo;
-import net.minecraft.registry.entry.RegistryEntry;
+import net.minecraft.util.registry.RegistryEntry;
 import net.minecraft.world.gen.surfacebuilder.MaterialRules;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Unique;

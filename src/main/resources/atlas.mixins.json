@@ -5,10 +5,11 @@
   "compatibilityLevel": "JAVA_17",
   "mixins": [
     "CarverMixin",
+    "DynamicRegistryManagerMixin",
     "MaterialRuleContextAccessor",
     "MaterialRuleContextMixin",
     "MinecraftServerMixin",
-    "RegistryElementCodecAccessor",
+    "RegistryElementListCodecAccessor",
     "RegistryLoaderMixin",
     "SurfaceBuilderMixin",
     "ThreadedAnvilChunkStorageMixin"

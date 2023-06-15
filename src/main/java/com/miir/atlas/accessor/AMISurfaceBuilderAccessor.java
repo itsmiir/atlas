@@ -1,8 +1,8 @@
 package com.miir.atlas.accessor;
 
 import com.miir.atlas.world.gen.AtlasMapInfo;
-import net.minecraft.registry.Registry;
-import net.minecraft.registry.entry.RegistryEntry;
+import net.minecraft.util.registry.Registry;
+import net.minecraft.util.registry.RegistryEntry;
 import net.minecraft.world.biome.Biome;
 import net.minecraft.world.biome.source.BiomeAccess;
 import net.minecraft.world.chunk.Chunk;
