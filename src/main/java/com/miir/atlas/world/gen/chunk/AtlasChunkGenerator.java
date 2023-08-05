@@ -83,15 +83,15 @@ public class AtlasChunkGenerator extends ChunkGenerator {
         if (this.verticalScale != 1) Atlas.LOGGER.warn("using non-default vertical scale for a dimension! this feature is in alpha, expect weird generation!");
         this.horizontalScale = ami.value().horizontalScale();
         this.heightmap = Atlas.getOrCreateMap(ami.value().heightmap(), NamespacedMapImage.Type.GRAYSCALE);
-        this.aquifer = !aquiferPath.equals("") ? Atlas.getOrCreateMap(aquiferPath, NamespacedMapImage.Type.GRAYSCALE) :null;
-        this.roof = !roofPath.equals("") ? Atlas.getOrCreateMap(roofPath, NamespacedMapImage.Type.GRAYSCALE) : null;
+        this.aquifer = !aquiferPath.isEmpty() ? Atlas.getOrCreateMap(aquiferPath, NamespacedMapImage.Type.GRAYSCALE) :null;
+        this.roof = !roofPath.isEmpty() ? Atlas.getOrCreateMap(roofPath, NamespacedMapImage.Type.GRAYSCALE) : null;
         this.settings = settings;
     }
 
     public void findMaps(MinecraftServer server, String levelName) throws IOException {
         this.heightmap.initialize(server);
         Atlas.LOGGER.info("found elevation data for dimension " + levelName + " in a " + this.heightmap.getWidth() + "x" + this.heightmap.getHeight() + " map: " + getPath());
-        if (!this.getAquiferPath().equals("")) {
+        if (!this.getAquiferPath().isEmpty()) {
             this.aquifer.initialize(server);
             Atlas.LOGGER.info("found aquifer data for dimension " + levelName + " in a " + this.aquifer.getWidth() + "x" + this.aquifer.getHeight() + " map: " + getAquiferPath());
         } else {
@@ -231,7 +231,7 @@ public class AtlasChunkGenerator extends ChunkGenerator {
         int truncatedZ = (int)Math.floor(zR);
         int minimumCellY = MathHelper.floorDiv(generationShapeConfig.minimumY(), generationShapeConfig.verticalCellBlockCount());
         int cellHeight = MathHelper.floorDiv(generationShapeConfig.height(), generationShapeConfig.verticalCellBlockCount());
-        if (truncatedX < 0 || truncatedZ < 0 || truncatedX >= this.heightmap.getWidth() || truncatedZ >= this.heightmap.getHeight()) return CompletableFuture.completedFuture(chunk);
+        if (truncatedX < -16 || truncatedZ < -16 || truncatedX > this.heightmap.getWidth() || truncatedZ > this.heightmap.getHeight()) return CompletableFuture.completedFuture(chunk);
         this.heightmap.loadPixelsInRange(truncatedX, truncatedZ, true, Atlas.GEN_RADIUS);
         if (this.aquifer != null) this.aquifer.loadPixelsInRange(truncatedX, truncatedZ, true, Atlas.GEN_RADIUS);
         return CompletableFuture.supplyAsync(Util.debugSupplier("wgen_fill_noise", () -> this.populateNoise(chunk, structureAccessor, blender, noiseConfig, minimumCellY, cellHeight)), Util.getMainWorkerExecutor());
