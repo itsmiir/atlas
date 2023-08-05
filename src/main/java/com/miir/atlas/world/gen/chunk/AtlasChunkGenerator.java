@@ -229,7 +229,7 @@ public class AtlasChunkGenerator extends ChunkGenerator {
         zR += this.heightmap.getHeight() / 2f;
         int truncatedX = (int)Math.floor(xR);
         int truncatedZ = (int)Math.floor(zR);
-        if (truncatedX < 0 || truncatedZ < 0 || truncatedX >= this.heightmap.getWidth() || truncatedZ >= this.heightmap.getHeight()) return CompletableFuture.completedFuture(chunk);
+        if (truncatedX < -16 || truncatedZ < -16 || truncatedX > this.heightmap.getWidth() || truncatedZ > this.heightmap.getHeight()) return CompletableFuture.completedFuture(chunk);
         this.heightmap.loadPixelsInRange(truncatedX, truncatedZ, true, Atlas.GEN_RADIUS);
         if (this.aquifer != null) this.aquifer.loadPixelsInRange(truncatedX, truncatedZ, true, Atlas.GEN_RADIUS);
         return CompletableFuture.supplyAsync(Util.debugSupplier("wgen_fill_noise", () -> this.populateNoise(chunk, structureAccessor, blender, noiseConfig)), Util.getMainWorkerExecutor());
