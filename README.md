@@ -1,6 +1,9 @@
 # Atlas
 atlas is a data-driven image-based world generator. give the mod a heightmap and biome map image, and you can incorporate it into a [datapack dimension](https://minecraft.fandom.com/wiki/Custom_dimension)! 
 
+### installation
+you can get the mod [on Modrinth!](https://modrinth.com/mod/atlas)
+
 ### how to use
 - create or find a grayscale heightmap. save it as a png with 8bpc, RGBA encoding. put it in your datapack; the standard is in the `atlas/map` directory.
 ![A grayscale heightmap of the Avila mountains. The mountain range appears as a white, branching line across the map. Image courtesy Irene Alvarado, https://medium.com/energeia/printing-mountains-6bbf577294b6](https://cdn.discordapp.com/attachments/769711740366880789/1061717611857051708/heightmap.png)
