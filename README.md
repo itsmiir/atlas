@@ -1,4 +1,5 @@
 # Atlas
+![A meadow in Minecraft. Tall pine trees encircle a clearing, and a mountain peak can be seen in the distance.](https://cdn.discordapp.com/attachments/769711740366880789/1063865770939007077/image.png)
 atlas is a data-driven image-based world generator. give the mod a heightmap and biome map image, and you can incorporate it into a [datapack dimension](https://minecraft.fandom.com/wiki/Custom_dimension)! 
 
 ### installation
